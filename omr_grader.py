@@ -386,6 +386,55 @@ def annotate(warped, answers, key, correct, header):
     return out
 
 
+# ---------------------------------------------------------------------------
+# Printable sheets (key sheet / student sheet) drawn onto the template PDF
+# ---------------------------------------------------------------------------
+DEFAULT_TEMPLATE = Path(__file__).resolve().parent / "Sheet100QA4.pdf"
+PT = 72 / DPI           # template pixels -> PDF points
+FILL_R = 4.6            # filled-bubble radius in points (printed outline is ~5)
+# Writing areas in points: right of the "Quiz :", "Full name:", "Class :" labels.
+FIELDS = {"exam": (130, 91.5, 284), "name": (146, 128.5, 284), "course": (130, 166, 284)}
+KEY_BOX_Y = 84.5        # baseline of the digits written above the Key bubbles
+
+
+def _fit_text(page, x, y, x_max, text, size=13):
+    while size > 6 and fitz.get_text_length(text, "helv", size) > x_max - x:
+        size -= 0.5
+    page.insert_text((x, y), text, fontname="helv", fontsize=size)
+
+
+def _bubble(page, x, y):
+    page.draw_circle(fitz.Point(x * PT, y * PT), FILL_R, color=(0, 0, 0), fill=(0, 0, 0))
+
+
+def write_sheets(template, out_path, sheets):
+    """Write one page per sheet onto copies of the template.
+
+    Each sheet is a dict with exam, course, key_id (3 digits) and answers (a key
+    string, or None for a blank student sheet). A canceled question gets all
+    four bubbles filled, which reads back as canceled.
+    """
+    src = fitz.open(template)
+    doc = fitz.open()
+    for s in sheets:
+        doc.insert_pdf(src)
+        page = doc[-1]
+        if s.get("exam"):
+            _fit_text(page, *FIELDS["exam"][:2], FIELDS["exam"][2], s["exam"])
+        if s.get("course"):
+            _fit_text(page, *FIELDS["course"][:2], FIELDS["course"][2], s["course"])
+        for x, d in zip(KEY_X, s["key_id"]):
+            w = fitz.get_text_length(d, "helv", 12)
+            page.insert_text((x * PT - w / 2, KEY_BOX_Y), d, fontname="helv", fontsize=12)
+            _bubble(page, x, DIGIT_Y[int(d)])
+        if s.get("answers") is not None:
+            _fit_text(page, *FIELDS["name"][:2], FIELDS["name"][2], "ANSWER KEY")
+            for q, a in enumerate(s["answers"], start=1):
+                for c in (range(4) if a == CANCELED else [CHOICES.index(a)]):
+                    _bubble(page, *question_center(q, c))
+    doc.save(out_path, garbage=3, deflate=True)
+
+
 def main(argv=None):
     global MARK_T
     ap = argparse.ArgumentParser(description=__doc__,
@@ -412,6 +461,18 @@ def main(argv=None):
     ap.add_argument("--id-digits", type=int, default=4, choices=range(1, len(ID_X) + 1),
                     metavar=f"1-{len(ID_X)}",
                     help="number of Student ID digits (default 4); they are read from the right-hand columns, where the 4-digit sheet prints them")
+    sheets = ap.add_argument_group("printable sheets")
+    sheets.add_argument("--key-sheet", metavar="PDF",
+                        help="write a filled answer-key sheet (one page per version)")
+    sheets.add_argument("--student-sheet", metavar="PDF",
+                        help="write a blank student sheet with the exam, course and key "
+                             "ID filled in (one page per version)")
+    sheets.add_argument("--exam-name", help="text for the Quiz field, e.g. 'Exam 2'")
+    sheets.add_argument("--course", help="text for the Class field, e.g. 'CSE4001 Fall 2026'")
+    sheets.add_argument("--key-id", help="3-digit key ID for a key that has none "
+                                         "(a .tex key given without VERSION=)")
+    sheets.add_argument("--template", default=str(DEFAULT_TEMPLATE),
+                        help="blank sheet PDF (default: Sheet100QA4.pdf next to this script)")
     args = ap.parse_args(argv)
 
     MARK_T = args.mark_threshold
@@ -423,6 +484,15 @@ def main(argv=None):
             if v in keys:
                 sys.exit(f"two keys for version {v}")
             keys[v] = k
+    if args.key_id:
+        if not re.fullmatch(r"\d{%d}" % len(KEY_X), args.key_id):
+            sys.exit(f"--key-id must be {len(KEY_X)} digits, got {args.key_id!r}")
+        if ANY not in keys:
+            sys.exit("--key-id is only for a key without a version (a .tex given without "
+                     "VERSION=); the other keys already carry theirs")
+        if args.key_id in keys:
+            sys.exit(f"two keys for version {args.key_id}")
+        keys[args.key_id] = keys.pop(ANY)
     keys = apply_cancels(keys, args.cancel)
     for v, k in keys.items():
         bad = set(k) - set(CHOICES + CANCELED)
@@ -442,6 +512,19 @@ def main(argv=None):
         f.write("version,answers\n")
         for v, k in keys.items():
             f.write(f"{v},{k}\n")
+
+    if args.key_sheet or args.student_sheet:
+        if ANY in keys:
+            sys.exit("the key has no ID to print on the sheet; give --key-id "
+                     "(or the .tex as VERSION=exam.tex)")
+        for path, with_answers in [(args.key_sheet, True), (args.student_sheet, False)]:
+            if path:
+                write_sheets(args.template, path, [
+                    {"exam": args.exam_name, "course": args.course, "key_id": v,
+                     "answers": k if with_answers else None}
+                    for v, k in keys.items()])
+                print(f"wrote {path}")
+
     if not args.scans:
         print(f"wrote {out / 'key.csv'}")
         return

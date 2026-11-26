@@ -51,6 +51,28 @@ so going below about 0.22 risks counting an erased-and-left-empty question as an
 A question read as blank whose darkest bubble is still above half the threshold is
 flagged `faint mark, check` so you can look at it in `review.pdf`.
 
+## Printable sheets
+
+The blank template has no course, exam or key filled in, so it works for any course.
+The grader can fill it in for you:
+
+```bash
+python omr_grader.py --key exam.tex --key-id 322 --exam-name "Exam 2" \
+    --course "CSE4001 Fall 2026" --key-sheet key_sheet.pdf --student-sheet student_sheet.pdf
+```
+
+- `--key-sheet`: the answer key bubbled in, with "ANSWER KEY" as the name, for checking
+  the key by hand or grading by hand. Canceled questions have all four bubbles filled.
+  The file can be given back to the grader as `--key key_sheet.pdf`.
+- `--student-sheet`: the sheet to print for students, with the exam name, course and
+  key ID filled in and no answers.
+- `--key-id` is the 3-digit ID bubbled in the Key field. A `.tex` key needs it (or
+  `322=exam.tex`); CSV and scanned keys carry their own. Several versions give one page
+  each.
+- `--template` picks a different blank sheet; the default is `Sheet100QA4.pdf` here.
+
+Without scans, only these files and `key.csv` are written.
+
 ## Testing
 
 `make_test_sheets.py TEMPLATE.pdf OUTDIR` makes 6 synthetic student sheets with known
