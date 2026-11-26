@@ -266,15 +266,31 @@ digits too big or off-center) and runs them through the same clean-up as real bo
 
 ## Testing
 
-`make_test_sheets.py [TEMPLATE.pdf] OUTDIR` makes 6 synthetic student sheets with known
-answers (two versions, 40 questions), a filled key sheet, `keys.csv` and `truth.csv`.
-The pages are skewed and noisy, and include a blank (sheet 2, Q5), a double mark
-(sheet 3, Q7), an erased-and-changed answer (sheet 4, Q9) and an upside-down page (5).
-Without a template it uses the blank `Sheet100QA4.pdf` in `omrgrader/`.
+`example/` holds a made-up exam with no real students: `exam.tex` (20 questions, laid
+out like a real two-column exam, with a commented-out question and a canceled one), its
+`exam.aux` and `exam.pdf`, and `gradebook.csv`, a Canvas export with invented students.
+`make_test_sheets.py --key` fills six sheets with answers to the exam's key, so the
+whole workflow runs from the LaTeX to the Canvas import:
+
+```bash
+python omr_grader.py --key example/exam.tex --key-id 322 --exam-name "Exam 1" \
+    --course "Example 101" --key-sheet example/out/key_sheet.pdf \
+    --student-sheet example/out/student_sheet.pdf --out example/out
+python make_test_sheets.py --key example/out/key.csv example/out
+python omr_grader.py example/out/students.pdf --key example/out/key.csv \
+    --canvas example/gradebook.csv --canvas-assignment "Exam 1"
+```
+
+`example/out/graded/results.csv` should match `example/out/truth.csv`. The sheets are
+skewed and noisy, and include a blank (sheet 2, Q5), a double mark (sheet 3, Q7), an
+erased-and-changed answer (sheet 4, Q9) and an upside-down page (5). The student IDs
+match the gradebook; one of them is shared by two students, so that sheet is held back.
+`example/out` is not tracked.
+
+Without `--key`, `make_test_sheets.py [TEMPLATE.pdf] OUTDIR` makes up two 40-question
+versions and also writes `keys.csv` and a filled key sheet (`--key key_sheet.pdf`):
 
 ```bash
 python make_test_sheets.py test
 python omr_grader.py test/students.pdf --key test/keys.csv
 ```
-
-`test/graded/results.csv` should match `test/truth.csv`.

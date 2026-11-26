@@ -1,11 +1,18 @@
-"""Make synthetic filled sheets for testing omr_grader.py.
+"""Make synthetic filled sheets for testing the grader.
 
-python make_test_sheets.py [TEMPLATE.pdf] OUTDIR   (default: the grader's template)
-Writes OUTDIR/students.pdf, OUTDIR/key_sheet.pdf, OUTDIR/keys.csv, OUTDIR/truth.csv.
+python make_test_sheets.py [--key KEY.csv] [TEMPLATE.pdf] OUTDIR
+
+Writes OUTDIR/students.pdf (six filled sheets) and OUTDIR/truth.csv (the answers
+and scores drawn on them). Without --key it makes up two 40-question keys and
+also writes OUTDIR/keys.csv and a filled key sheet, OUTDIR/key_sheet.pdf. With
+--key the sheets answer that key (e.g. the key.csv made from example/exam.tex),
+cycling through its versions. TEMPLATE defaults to the grader's blank sheet.
+
+The student IDs are fixed (STUDENT_IDS) so they match example/gradebook.csv.
 """
 
+import argparse
 import csv
-import sys
 from pathlib import Path
 
 import cv2
@@ -16,6 +23,7 @@ from omrgrader import grader as g
 
 RNG = np.random.default_rng(0)
 S = 1.5  # draw at 300 dpi (template coords are 200 dpi)
+STUDENT_IDS = ["2869", "0621", "4924", "3448", "8213", "3040"]   # one per sheet
 
 
 def render_template(path):
@@ -71,36 +79,47 @@ def to_pdf(images, path):
     doc.save(path)
 
 
-def main(template, outdir):
+def main(template, outdir, key=None):
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     base = render_template(template)
-    n = 40
-    keys = {v: "".join(RNG.choice(list("ABCD"), n)) for v in ["322", "117"]}
+    if key:
+        keys = g.load_keys(key)
+        bad = [v for v in keys if not (v.isdigit() and len(v) == len(g.KEY_X))]
+        if bad:
+            raise SystemExit(f"{key}: versions must be {len(g.KEY_X)} digits, got {bad}")
+        n = max(len(k) for k in keys.values())
+        if n < 9:
+            raise SystemExit(f"{key}: needs at least 9 questions for the test cases")
+    else:
+        n = 40
+        keys = {v: "".join(RNG.choice(list("ABCD"), n)) for v in ["322", "117"]}
 
-    # Key sheet for version 117.
-    key_img = base.copy()
-    set_version(key_img, "117")
-    for q, a in enumerate(keys["117"], 1):
-        fill(key_img, *g.question_center(q, "ABCD".index(a)), level=20)
-    to_pdf([distort(key_img)], outdir / "key_sheet.pdf")
+        # Key sheet for version 117.
+        key_img = base.copy()
+        set_version(key_img, "117")
+        for q, a in enumerate(keys["117"], 1):
+            fill(key_img, *g.question_center(q, "ABCD".index(a)), level=20)
+        to_pdf([distort(key_img)], outdir / "key_sheet.pdf")
 
-    with open(outdir / "keys.csv", "w") as f:
-        f.write("version,answers\n")
-        for v, k in keys.items():
-            f.write(f"{v},{k}\n")
+        with open(outdir / "keys.csv", "w") as f:
+            f.write("version,answers\n")
+            for v, k in keys.items():
+                f.write(f"{v},{k}\n")
+    versions = list(keys)
 
     pages, truth = [], []
-    for s in range(6):
+    for s, sid in enumerate(STUDENT_IDS):
         img = base.copy()
-        version = "322" if s % 2 == 0 else "117"
+        version = versions[s % len(versions)]
         set_version(img, version)
-        sid = "".join(str(d) for d in RNG.integers(0, 10, 4))
         for x, d in zip(g.ID_X[-4:], sid):  # the 4-digit sheet's columns
             fill(img, x, g.DIGIT_Y[int(d)], level=RNG.uniform(40, 110))
         answers = []
         for q in range(1, n + 1):
             correct = keys[version][q - 1]
+            if correct not in "ABCD":   # canceled question: any answer
+                correct = RNG.choice(list("ABCD"))
             a = correct if RNG.random() < 0.7 else RNG.choice(list("ABCD"))
             if s == 1 and q == 5:       # blank
                 answers.append("-")
@@ -129,8 +148,12 @@ def main(template, outdir):
 
 
 if __name__ == "__main__":
-    # make_test_sheets.py OUTDIR, or make_test_sheets.py TEMPLATE.pdf OUTDIR
-    args = sys.argv[1:]
-    if len(args) == 1:
-        args = [g.DEFAULT_TEMPLATE] + args
-    main(*args)
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("paths", nargs="+", metavar="[TEMPLATE.pdf] OUTDIR")
+    ap.add_argument("--key", help="answer the sheets from this key (CSV, e.g. key.csv)")
+    args = ap.parse_args()
+    if len(args.paths) > 2:
+        ap.error("give at most TEMPLATE.pdf and OUTDIR")
+    template, outdir = ([g.DEFAULT_TEMPLATE] + args.paths)[-2:]
+    main(template, outdir, args.key)

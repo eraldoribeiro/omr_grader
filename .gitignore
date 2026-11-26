@@ -12,3 +12,10 @@
 __pycache__/
 *.egg-info/
 !/docs/
+# The example exam is synthetic and tracked; its generated output is not.
+!/example/
+/example/*
+!/example/exam.tex
+!/example/exam.aux
+!/example/exam.pdf
+!/example/gradebook.csv

@@ -84,15 +84,19 @@ omr-grader --key exam2.tex --key-id 322 --exam-name "Exam 2" \
     --student-sheet student_sheet.pdf --out .
 ```
 
+For the example exam in the repository (section 9) it prints:
+
 ```text
-grading 78 questions; canceled questions are left out of the total
-  key 322: canceled none
+warning: exam.tex: Q15: no correct choices, canceled
+grading 20 questions; canceled questions are left out of the total
+  key 322: canceled [15]
 wrote key_sheet.pdf
 wrote student_sheet.pdf
 wrote key.csv
 ```
 
-- `key.csv` is the key in plain text (`322,BCADCCCCAD...`). The grading step uses it.
+- `key.csv` is the key in plain text (`322,BCADCCCCADBBCBXCABBC`, with `X` for the
+  canceled Q15). The grading step uses it.
 - `key_sheet.pdf` is the answer sheet with the key bubbled in. Compare it with the exam
   to catch a wrong `\correctchoice` before grading.
 - `student_sheet.pdf` is the blank sheet to print, with the exam name, course and key
@@ -100,10 +104,10 @@ wrote key.csv
 
 Warnings to look for in the output:
 
-- `found 78 questions but exam2.aux says 80`: a question was skipped or counted twice,
+- `found 18 questions but exam.aux says 20`: a question was skipped or counted twice,
   often one inside a comment or a code listing. Compile the LaTeX again and check.
 - A question with no correct choice, or more than one, is canceled with a warning and
-  shows as `canceled [n]`.
+  shows as `canceled [n]`, like Q15 above.
 
 In the window: set "Exam folder" at the top to the `exam2` folder (in Finder,
 Option-Command-C copies a folder's path). Then, in the **Prepare exam** tab, add
@@ -130,7 +134,7 @@ grading, each sheet is graded with the key whose ID the student bubbled.
 
   ```text
   version,answers
-  322,BCADCCCCADBBCBXC...
+  322,BCADCCCCADBBCBXCABBC
   ```
 
 - **A filled key sheet**: bubble the answers and the Key ID on a blank sheet, scan it,
@@ -156,21 +160,20 @@ omr-grader scans.pdf --key key.csv \
 
 The results go to a `graded` folder next to the scans, here `exam2/graded`; `--out`
 picks another folder. Leave out the last line to grade without the gradebook. The output
-from the test sheets of section 9:
+for the example in section 9 (its gradebook column is "Exam 1"):
 
 ```text
-gradebook: 13 students; column 'Exam 2 (5805405)' (100 points)
-  warning: Foxtrot, Fay, Golf, Gus share ID digits 3040; their sheets cannot be matched automatically
-grading 40 questions; canceled questions are left out of the total
-  key 322: canceled none
-  key 117: canceled none
-students.pdf#p1: ID 2869  Alpha, Ann  v322  31/40  77.5%
-students.pdf#p2: ID 0621  Bravo, Bo  v117  28/40  70.0%  [blank: [5]]
-students.pdf#p3: ID 4924  Charlie, Cy  v322  29/40  72.5%  [multiple: [7]]
-students.pdf#p4: ID 3448  Delta, Di  v117  30/40  75.0%
-students.pdf#p5: ID 8213  Echo, Ed  v322  28/40  70.0%
-students.pdf#p6: ID 3040  v117  34/40  85.0%  [ID 3040 belongs to 2 students (Foxtrot, Fay; Golf, Gus); enter this grade by hand]
-canvas: 5 grades in graded/canvas_import.csv; 1 sheet(s) not matched, 0 student(s) with several sheets (see flags); 8 student(s) without a sheet (graded/absent.csv)
+gradebook: 9 students; column 'Exam 1 (100002)' (100 points)
+  warning: Fontaine, Leo, Grady, Nora share ID digits 3040; their sheets cannot be matched automatically
+grading 20 questions; canceled questions are left out of the total
+  key 322: canceled [15]
+students.pdf#p1: ID 2869  Archer, Maya  v322  14/19  73.7%
+students.pdf#p2: ID 0621  Brennan, Theo  v322  10/19  52.6%  [blank: [5]]
+students.pdf#p3: ID 4924  Castillo, Ines  v322  15/19  78.9%  [multiple: [7]]
+students.pdf#p4: ID 3448  Dalton, Reid  v322  16/19  84.2%
+students.pdf#p5: ID 8213  Ekwueme, Ada  v322  15/19  78.9%
+students.pdf#p6: ID 3040  v322  15/19  78.9%  [ID 3040 belongs to 2 students (Fontaine, Leo; Grady, Nora); enter this grade by hand]
+canvas: 5 grades in graded/canvas_import.csv; 1 sheet(s) not matched, 0 student(s) with several sheets (see flags); 4 student(s) without a sheet (graded/absent.csv)
 wrote graded/results.csv, graded/item_analysis.csv, graded/review.pdf
 ```
 
@@ -197,9 +200,9 @@ One row per page:
 
 ```text
 page,student_id,name,sis_user_id,version,score,total,percent,answers,flags
-students.pdf#p1,2869,"Alpha, Ann",900002869,322,31,40,77.5,DCCBBAAABDCDCC...,
-students.pdf#p2,0621,"Bravo, Bo",900010621,117,28,40,70.0,BAAB-BDCBCABBD...,blank: [5]
-students.pdf#p3,4924,"Charlie, Cy",900024924,322,29,40,72.5,DBCBBA*CBCCADC...,multiple: [7]
+students.pdf#p1,2869,"Archer, Maya",900112869,322,14,19,73.7,BCADCACCBDDBBBACACBC,
+students.pdf#p2,0621,"Brennan, Theo",900120621,322,10,19,52.6,BCDD-DCBCDABDBAACBBC,blank: [5]
+students.pdf#p3,4924,"Castillo, Ines",900134924,322,15,19,78.9,BAADCC*CADDBCBACCBBC,multiple: [7]
 ```
 
 - `answers` is what was read: a letter, `-` for blank, `*` for several marks.
@@ -219,7 +222,7 @@ One page per sheet, straightened, in the same order as `results.csv`:
 - Green circle: the correct answer (filled in when the student chose it).
 - Red cross: the student's wrong choice.
 - `BLANK` and `MULTI` in orange, left of the question number.
-- A line through a question: canceled (Q12 here).
+- A line through a question: canceled (Q15 here).
 - At the bottom of the page: ID, name, version and score, as in the console output.
 - When the ID came from handwriting or the gradebook had to repair it, the enlarged ID
   boxes are pasted at the bottom so you can read them yourself.
@@ -233,9 +236,9 @@ The percentage of students who got each question right, per version:
 
 ```text
 version,question,key,percent_correct
-322,1,D,66.7
-322,2,C,66.7
-322,3,C,100.0
+322,1,B,83.3
+322,2,C,83.3
+322,3,A,50.0
 ```
 
 When almost nobody got a question right, check its key and its wording. Section 7
@@ -245,7 +248,7 @@ shows how to cancel it.
 
 With `--canvas`, `canvas_import.csv` is the file you import (section 8). It has one row
 per student whose sheet was matched, with the score scaled to the assignment's points:
-31/40 on a 100-point assignment becomes 77.50.
+14/19 on a 100-point assignment becomes 73.68.
 
 `absent.csv` lists the students in the gradebook with no sheet: absent, or a sheet that
 could not be matched. Compare it with the sheets flagged as not matched.
@@ -321,7 +324,7 @@ its own (a `.tex` key given without a key ID works the same way):
 
 ```text
 version,answers
-any,BCADCCCCADBBCBXC...
+any,BCADCCCCADBBCBXCABBC
 ```
 
 ```bash
@@ -349,22 +352,40 @@ hand for sheets that were not exported stay. After grading again (section 7), im
 new file the same way. It replaces the grades of every student it contains, including
 a score you corrected by hand after the first import, so enter that correction again.
 
-## 9. Practice on test sheets
+## 9. Practice on the example exam
 
-The repository can make six synthetic sheets with known answers, so you can try every
-step before the real exam. From a clone of the repository:
+The `example/` folder of the repository has a made-up exam with no real students, so
+you can try every step before the real exam:
+
+- `exam.tex` and `exam.pdf`: a 20-question exam in the exam class, laid out in two
+  columns with a single-column page of code listings at the end. It includes a
+  commented-out question and a question with no correct choice (Q15).
+- `exam.aux`: from compiling it, for the question-count check.
+- `gradebook.csv`: a Canvas export with invented students, including two who share the
+  last four digits of their SIS User ID and two with no sheet.
+
+From a clone of the repository, prepare the exam, fill six sheets with answers to its
+key, and grade them against the gradebook:
+
+```bash
+omr-grader --key example/exam.tex --key-id 322 --exam-name "Exam 1" \
+    --course "Example 101" --key-sheet example/out/key_sheet.pdf \
+    --student-sheet example/out/student_sheet.pdf --out example/out
+python make_test_sheets.py --key example/out/key.csv example/out
+omr-grader example/out/students.pdf --key example/out/key.csv \
+    --canvas example/gradebook.csv --canvas-assignment "Exam 1"
+```
+
+The results go to `example/out/graded`, and `example/out/truth.csv` holds the answers
+and scores drawn on the sheets, which `results.csv` should match. The sheets are skewed
+and noisy and include a blank (sheet 2, Q5), a double mark (sheet 3, Q7), an
+erased-and-changed answer (sheet 4, Q9) and an upside-down page (5). The output examples
+in this guide come from this run. `example/out` is not tracked by git.
+
+Without `--key`, `make_test_sheets.py` makes up two 40-question versions and also writes
+`keys.csv` and a filled key sheet, for trying several versions and `--key key_sheet.pdf`:
 
 ```bash
 python make_test_sheets.py test
 omr-grader test/students.pdf --key test/keys.csv
 ```
-
-`test/truth.csv` holds the answers and scores that were drawn on the sheets;
-`test/graded/results.csv` should match it. The pages are skewed and noisy and include
-a blank (sheet 2, Q5), a double mark (sheet 3, Q7), an erased-and-changed answer
-(sheet 4, Q9) and an upside-down page (5). `test/key_sheet.pdf` is a filled key sheet
-for trying `--key key_sheet.pdf`.
-
-To try the gradebook steps, export the gradebook of a course you teach and add rows whose
-SIS User IDs end in the test IDs (2869, 0621, 4924, 3448, 8213, 3040). Do this in a copy
-of the file, not in Canvas.

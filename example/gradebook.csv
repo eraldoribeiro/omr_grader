@@ -1,0 +1,13 @@
+Student,ID,SIS User ID,SIS Login ID,Section,Homework 1 (100001),Exam 1 (100002),Current Score,Unposted Current Score,Final Score,Unposted Final Score
+,,,,,Manual Posting,Manual Posting,,,,
+    Points Possible,,,,,10.00,100.00,(read only),(read only),(read only),(read only)
+"Archer, Maya",1001,900112869,marcher2024,Example 101 Section 01,9.00,,90.00,90.00,90.00,90.00
+"Brennan, Theo",1002,900120621,tbrennan2024,Example 101 Section 01,8.00,,80.00,80.00,80.00,80.00
+"Castillo, Ines",1003,900134924,icastillo2024,Example 101 Section 01,10.00,,100.00,100.00,100.00,100.00
+"Dalton, Reid",1004,900143448,rdalton2024,Example 101 Section 01,7.00,,70.00,70.00,70.00,70.00
+"Ekwueme, Ada",1005,900158213,aekwueme2024,Example 101 Section 01,9.50,,95.00,95.00,95.00,95.00
+"Fontaine, Leo",1006,900163040,lfontaine2024,Example 101 Section 01,6.00,,60.00,60.00,60.00,60.00
+"Grady, Nora",1007,900173040,ngrady2024,Example 101 Section 01,8.50,,85.00,85.00,85.00,85.00
+"Hollis, Sam",1008,900185517,shollis2024,Example 101 Section 01,10.00,,100.00,100.00,100.00,100.00
+"Iverson, Kai",1009,900197702,kiverson2024,Example 101 Section 01,,,0.00,0.00,0.00,0.00
+"Student, Test",1010,,a1b2c3d4e5f6,Example 101 Section 01,,,,,,

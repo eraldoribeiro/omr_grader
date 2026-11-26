@@ -1,0 +1,327 @@
+% Example exam for omr_grader (synthetic: made-up questions, no real course).
+%
+% The grader reads the key from this file: questions are numbered in document
+% order and the answer is the \correctchoice (or \CorrectChoice). Things it
+% handles, shown here:
+%   - two columns, then a single-column page whose numbering carries on (Q19-20)
+%   - code listings: their contents are ignored
+%   - a commented-out question (after Q11): not counted
+%   - a question with no correct choice (Q15): canceled, with a warning
+% Compile with pdflatex (twice) to refresh exam.aux, which the grader uses to
+% check the question count.
+\documentclass{exam}
+
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{multicol}
+\usepackage{needspace}
+
+\lstset{
+    numberstyle=\tiny,
+    basicstyle=\ttfamily\small,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    frame=single
+}
+
+\usepackage[top=0.7in,bottom=0.7in,left=0.6in,right=0.6in]{geometry}
+
+\setlength{\columnsep}{20pt}
+\setlength{\columnseprule}{0.4pt}
+\raggedcolumns
+
+% the question counter restarts with each questions environment, so carry it
+% across the single-column interruptions by hand
+\newcounter{savedq}
+\newcommand{\qsave}{\setcounter{savedq}{\value{question}}}
+\newcommand{\qrestore}{\setcounter{question}{\value{savedq}}}
+
+\renewcommand{\questionshook}{%
+  \setlength{\itemsep}{6pt}\setlength{\parsep}{0pt}\setlength{\topsep}{2pt}%
+  \interlinepenalty=1000 }
+\renewcommand{\choiceshook}{%
+  \setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}\setlength{\topsep}{2pt}%
+  \interlinepenalty=1000
+  % reduce the indent of the options (the class default is 2.5em)
+  \settowidth{\leftmargin}{W.\hskip\labelsep\hskip 1em}%
+  \labelwidth\leftmargin \advance\labelwidth-\labelsep }
+\makeatletter
+\@beginparpenalty=10000
+\@itempenalty=10000
+\makeatother
+
+\begin{document}
+%\printanswers
+
+\begin{center}
+{\LARGE \bf Example 101 Exam 1 (Fall 2026)}
+\end{center}
+
+\vspace{.5in}
+\noindent\makebox[\textwidth]{\large \bf Student Name:\enspace\hrulefill}
+\vspace{0.1in}
+
+\paragraph{Instructions:} Mark your answers on the answer sheet. Bubble the last
+four digits of your student number and the key ID \textbf{322}.
+
+%============================================
+\begin{multicols}{2}
+\begin{questions}
+%============================================
+
+\question
+How many bits are in a byte?
+\begin{choices}
+    \choice 4
+    \correctchoice 8
+    \choice 16
+    \choice 32
+\end{choices}
+
+\question
+Which number is written as \texttt{1010} in binary?
+\begin{choices}
+    \choice 5
+    \choice 8
+    \correctchoice 10
+    \choice 12
+\end{choices}
+
+\question
+Which data structure returns items in last-in, first-out order?
+\begin{choices}
+    \correctchoice Stack
+    \choice Queue
+    \choice Heap
+    \choice Linked list
+\end{choices}
+
+\question
+How many comparisons does binary search need, at most, to find an item in a
+sorted list of 1024 items?
+\begin{choices}
+    \choice 1024
+    \choice 512
+    \choice 32
+    \correctchoice 11
+\end{choices}
+%\begin{solution}
+%    Each comparison halves the list: 1024, 512, ..., 1 is 11 steps.
+%\end{solution}
+
+\question
+Which of these is a prime number?
+\begin{choices}
+    \choice 21
+    \choice 27
+    \correctchoice 29
+    \choice 33
+\end{choices}
+
+\question
+What is the time complexity of comparing every pair of $n$ items?
+\begin{choices}
+    \choice $O(n)$
+    \choice $O(n \log n)$
+    \correctchoice $O(n^2)$
+    \choice $O(2^n)$
+\end{choices}
+
+\question
+Which unit is used to measure a processor's clock rate?
+\begin{choices}
+    \choice Byte
+    \choice Watt
+    \correctchoice Hertz
+    \choice Ohm
+\end{choices}
+
+\question
+What is $2^{10}$?
+\begin{choices}
+    \choice 100
+    \choice 512
+    \correctchoice 1024
+    \choice 2048
+\end{choices}
+
+\question
+Which Boolean expression is true only when both $a$ and $b$ are true?
+\begin{choices}
+    \correctchoice $a \land b$
+    \choice $a \lor b$
+    \choice $\lnot a$
+    \choice $a \oplus b$
+\end{choices}
+
+\question
+Which memory keeps its contents when the power is off?
+\begin{choices}
+    \choice Registers
+    \choice Cache
+    \choice RAM
+    \correctchoice Flash storage
+\end{choices}
+
+\question
+In a sorted array, which search is faster for large inputs?
+\begin{choices}
+    \choice Linear search
+    \correctchoice Binary search
+    \choice Both take the same time
+    \choice Neither works on sorted arrays
+\end{choices}
+
+% A question removed from this year's exam. Commented lines are not counted.
+%\question
+%Which device was used to read data from punched cards?
+%\begin{choices}
+%    \choice Tape drive
+%    \correctchoice Card reader
+%    \choice Plotter
+%    \choice Modem
+%\end{choices}
+
+\question
+What is the hexadecimal value of the decimal number 255?
+\begin{choices}
+    \choice \texttt{EE}
+    \correctchoice \texttt{FF}
+    \choice \texttt{F0}
+    \choice \texttt{100}
+\end{choices}
+
+\question
+Which sorting algorithm repeatedly swaps adjacent items that are out of order?
+\begin{choices}
+    \choice Merge sort
+    \choice Quick sort
+    \correctchoice Bubble sort
+    \choice Heap sort
+\end{choices}
+
+%============================================
+% Questions with a table
+%============================================
+\needspace{14\baselineskip}
+\uplevel{\textbf{For the following question, all sizes are in kilobytes (KB).}}
+
+\needspace{14\baselineskip}
+\question
+Four files have the sizes below.
+
+\begin{center}
+\begin{tabular}{cc}
+\hline
+File & Size \\
+\hline
+F1 & 10 \\
+F2 & 20 \\
+F3 & 30 \\
+F4 & 40 \\
+\hline
+\end{tabular}
+\end{center}
+
+What is their average size?
+\begin{choices}
+    \choice 20 KB
+    \CorrectChoice 25 KB
+    \choice 30 KB
+    \choice 100 KB
+\end{choices}
+
+% No correct choice: the grader cancels this question and warns about it.
+\question
+Which of these is the best programming language?
+\begin{choices}
+    \choice C
+    \choice Python
+    \choice Java
+    \choice Rust
+\end{choices}
+
+\question
+How many distinct values can 3 bits represent?
+\begin{choices}
+    \choice 3
+    \choice 6
+    \correctchoice 8
+    \choice 9
+\end{choices}
+
+\question
+Which protocol is used to load web pages?
+\begin{choices}
+    \correctchoice HTTP
+    \choice SMTP
+    \choice FTP
+    \choice SSH
+\end{choices}
+
+\question
+A queue removes items in which order?
+\begin{choices}
+    \choice Last in, first out
+    \correctchoice First in, first out
+    \choice Smallest first
+    \choice Random
+\end{choices}
+
+\qsave
+\end{questions}
+\end{multicols}
+
+\clearpage
+
+\begin{questions}
+\qrestore
+\question What does this C program print?
+
+\begin{lstlisting}[language=C]
+#include <stdio.h>
+
+int main(void)
+{
+      int x = 7;
+      x = x / 2;           /* integer division */
+      printf("%d\n", x);
+      return 0;
+}
+\end{lstlisting}
+
+\begin{choices}
+    \choice 3.5
+    \correctchoice 3
+    \choice 4
+    \choice 7
+\end{choices}
+
+\question What does this C program print?
+
+\begin{lstlisting}[language=C]
+#include <stdio.h>
+
+int main(void)
+{
+      int sum = 0;
+      for (int i = 1; i <= 4; i++)
+            sum += i;
+      printf("%d\n", sum);
+      return 0;
+}
+\end{lstlisting}
+
+\begin{choices}
+    \choice 4
+    \choice 6
+    \correctchoice 10
+    \choice 15
+\end{choices}
+
+\end{questions}
+
+\end{document}
