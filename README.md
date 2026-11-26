@@ -99,6 +99,23 @@ Running the network in NumPy keeps grading free of a deep-learning library:
 
 So grading needs only the three packages above, plus the weights file in this repo.
 
+The network itself is written out in `handwriting.py`; the weights file holds only the
+learned numbers:
+
+- `_conv`: a convolution layer (each 3x3 filter slid over the image with NumPy's
+  `sliding_window_view` and `einsum`, plus the bias).
+- `_pool`: 2x2 max-pooling (reshape into 2x2 blocks, keep each block's maximum).
+- `DigitReader` loads the weights with `np.load`; its `probs` method chains the layers
+  (convolution, ReLU, pooling, twice; then two matrix products and a softmax) and returns
+  the ten digit probabilities.
+- `DigitReader.read` is what the grader calls: for each ID box it cuts the box out,
+  cleans it, runs `probs`, and returns the likeliest digit and its confidence.
+
+The same network is defined in PyTorch in `make_model` in `train_digits.py`, for
+training. The two definitions must match layer for layer, or the saved weights would be
+read into the wrong layers, so `train_digits.py` checks after saving that the NumPy
+version gives the same probabilities as PyTorch.
+
 To retrain the weights (needs PyTorch and the MNIST idx files):
 
 ```bash
