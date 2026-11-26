@@ -12,30 +12,65 @@ import, with example output and what to do about each flag.
 
 ## Install
 
-With [uv](https://docs.astral.sh/uv/), which also installs Python if needed:
+The grader runs on your own computer, so scans and gradebooks are never uploaded. It
+needs git (on a Mac, typing `git` in Terminal offers to install it) and has been tested
+on macOS.
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+### With uv (recommended; no Python needed)
 
-```bash
-uv tool install git+https://github.com/eraldoribeiro/omr_grader.git
-```
+[uv](https://docs.astral.sh/uv/) installs Python programs, and Python itself if needed,
+in their own folder, so the grader can't conflict with other Python software.
 
-Or with pip into a Python you already have (e.g. Anaconda):
+1. Install uv. On a Mac or Linux, in Terminal:
+
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+   On Windows, in PowerShell:
+
+   ```powershell
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+   Then close the terminal and open a new one.
+
+2. Install the grader:
+
+   ```bash
+   uv tool install git+https://github.com/eraldoribeiro/omr_grader.git
+   ```
+
+3. Open the grader window in your browser:
+
+   ```bash
+   omr-grader-gui
+   ```
+
+   The same steps from the command line: `omr-grader --help`.
+
+To update, run step 2 again with `--reinstall` after `install`. To remove it:
+`uv tool uninstall omr-grader`.
+
+### With pip (if you already use Python, e.g. Anaconda)
 
 ```bash
 pip install git+https://github.com/eraldoribeiro/omr_grader.git
 ```
 
-This adds two commands: `omr-grader` (the command line below) and `omr-grader-gui`
-(the browser window). To update, run the install again with `--reinstall` (uv) or
-`--force-reinstall --no-deps` (pip). Installing needs git, but no GitHub account.
+This adds the same two commands. To update, add `--force-reinstall --no-deps`; to remove
+it, `pip uninstall omr-grader`.
 
-From a clone of the repository, `python omr_grader.py` and `python gui.py` do the same
-as the two commands; they need `opencv-python`, `numpy`, `pymupdf` and, for the window,
-`gradio`. The examples below use `python omr_grader.py`; with an installed copy type
-`omr-grader` instead.
+### From a clone (to try the example exam or change the code)
+
+```bash
+git clone https://github.com/eraldoribeiro/omr_grader.git
+```
+
+In the clone, `python omr_grader.py` and `python gui.py` do the same as the two commands;
+they need `opencv-python`, `numpy`, `pymupdf` and, for the window, `gradio`. The example
+exam in `example/` is only in a clone (see [Testing](#testing)). The examples below use
+`python omr_grader.py`; with an installed copy type `omr-grader` instead.
 
 ## Workflow
 
