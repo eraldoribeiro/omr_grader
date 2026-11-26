@@ -20,3 +20,4 @@ __pycache__/
 !/example/exam.aux
 !/example/exam.pdf
 !/example/gradebook.csv
+!/example/corrections.csv

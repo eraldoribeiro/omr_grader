@@ -170,6 +170,13 @@ See [Local window](#local-window) for details.
   handwriting that disagrees with the bubbles is flagged too. On synthetic scans, 95% of
   digits were read right, 4% were left as `?` and about 1% were misread. Turn it off
   with `--no-handwriting`.
+- **Corrections**: `--corrections corrections.csv` sets answers, IDs or versions by
+  hand, for very light or missing marks and IDs the grader could not match. Each line is
+  `page,question,answer` with the page label from `results.csv`: `scans.pdf#p2,5,C`
+  sets Q5 to C, `-` clears a stray mark, `scans.pdf#p6,id,3041` sets the ID (the full SIS
+  User ID tells apart two students who share the last digits), and
+  `scans.pdf#p6,version,322` sets the version. The scans are not changed; each correction
+  is flagged in `results.csv` and marked `HAND` on `review.pdf`.
 - The 3-digit Key field on each student sheet selects which answer key grades it
   (except a `.tex` key given without a version, which grades every sheet).
 - The number of questions graded is the key length unless `--num-questions` is given.
@@ -258,7 +265,8 @@ the window and on the command line.
 
 - **Grade** tab: add the scans and the key (the exam `.tex`, with its `.aux` for the
   question-count check, a key CSV or a scanned key sheet), optionally the Canvas
-  gradebook (its assignment columns fill the dropdown) and cancellations. After grading
+  gradebook (its assignment columns fill the dropdown), a corrections file and
+  cancellations. After grading
   it shows a summary, the sheets to check and all sheets, with buttons that open
   `review.pdf` and the `graded` folder.
 - **Prepare exam** tab: the key, key sheet and student sheet from the LaTeX or a CSV,

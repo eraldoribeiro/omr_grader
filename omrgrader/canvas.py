@@ -58,6 +58,12 @@ class Gradebook:
         """The digits a student writes on the sheet: last id_digits of the SIS ID."""
         return re.sub(r"\D", "", student["SIS User ID"])[-self.id_digits:]
 
+    def by_sis(self, sis):
+        """The student with this full SIS User ID, or None."""
+        sis = re.sub(r"\D", "", sis)
+        hits = [s for s in self.students if re.sub(r"\D", "", s["SIS User ID"]) == sis]
+        return hits[0] if len(hits) == 1 else None
+
     def match(self, sid):
         """Students whose key fits sid ('?' matches any digit)."""
         if len(sid) != self.id_digits:

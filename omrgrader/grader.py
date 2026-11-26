@@ -365,7 +365,47 @@ def grade(answers, key, policy):
     return correct, score, len(key) - n_canceled
 
 
-def annotate(warped, answers, key, correct, header):
+def load_corrections(path, num_questions, id_digits):
+    """Read a corrections CSV: lines "page,question,answer".
+
+    page is the label from results.csv (e.g. "scans.pdf#p2"). question is a
+    question number with answer A-D, or "-" to clear a stray mark; "id" with the
+    student ID (the last id_digits digits, or the full SIS User ID); or "version"
+    with the 3-digit key ID. Returns {page: {"answers": {q: a}, "id": .., "version": ..}}.
+    """
+    fixes = {}
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        for n, row in enumerate(csv.reader(f), start=1):
+            row = [c.strip() for c in row]
+            if not any(row) or row[0].startswith("#") or row[0].lower() == "page":
+                continue
+            if len(row) < 3 or not row[0]:
+                sys.exit(f"{path}, line {n}: expected page,question,answer")
+            page, what, value = row[0], row[1].lower(), row[2].upper()
+            fix = fixes.setdefault(page, {"answers": {}, "id": None, "version": None})
+            where = f"{path}, line {n}"
+            if what == "id":
+                if not (value.isdigit() and len(value) >= id_digits):
+                    sys.exit(f"{where}: the ID must be at least {id_digits} digits, got {value!r}")
+                fix["id"] = value
+            elif what == "version":
+                if not (value.isdigit() and len(value) == len(KEY_X)):
+                    sys.exit(f"{where}: the version must be {len(KEY_X)} digits, got {value!r}")
+                fix["version"] = value
+            elif what.isdigit() and 1 <= int(what) <= num_questions:
+                if value not in CHOICES and value != "-":
+                    sys.exit(f"{where}: the answer must be one of {', '.join(CHOICES)} or -, "
+                             f"got {value!r}")
+                if int(what) in fix["answers"]:
+                    sys.exit(f"{where}: question {what} of {page} is corrected twice")
+                fix["answers"][int(what)] = value
+            else:
+                sys.exit(f"{where}: the question must be 1-{num_questions}, id or version, "
+                         f"got {row[1]!r}")
+    return fixes
+
+
+def annotate(warped, answers, key, correct, header, by_hand=()):
     out = cv2.cvtColor(warped, cv2.COLOR_GRAY2BGR)
     green, red, orange, blue = (0, 170, 0), (0, 0, 220), (0, 140, 255), (200, 80, 0)
     gray = (130, 130, 130)
@@ -382,10 +422,19 @@ def annotate(warped, answers, key, correct, header):
             x, y = question_center(q, CHOICES.index(a))
             cv2.line(out, (int(x) - 14, int(y) - 14), (int(x) + 14, int(y) + 14), red, 3)
             cv2.line(out, (int(x) - 14, int(y) + 14), (int(x) + 14, int(y) - 14), red, 3)
-        if a in "-*":
+        if a in "-*" and q not in by_hand:
             x, y = question_center(q, 0)
             cv2.putText(out, "BLANK" if a == "-" else "MULTI", (int(x) - 120, int(y) + 8),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, orange, 2)
+    purple = (170, 0, 170)
+    for q in by_hand:   # answers set from the corrections file
+        x, y = question_center(q, 0)
+        cv2.putText(out, "HAND", (int(x) - 120, int(y) + 8),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, purple, 2)
+        a = answers[q - 1]
+        if a in CHOICES:
+            x, y = question_center(q, CHOICES.index(a))
+            cv2.rectangle(out, (int(x) - 22, int(y) - 22), (int(x) + 22, int(y) + 22), purple, 2)
     cv2.putText(out, header, (60, 2290), cv2.FONT_HERSHEY_SIMPLEX, 1.1, blue, 3)
     return out
 
@@ -553,6 +602,10 @@ def main(argv=None):
                     help="number of Student ID digits (default 4); they are read from the right-hand columns, where the 4-digit sheet prints them")
     ap.add_argument("--no-handwriting", action="store_true",
                     help="do not read the handwritten ID boxes")
+    ap.add_argument("--corrections", metavar="CSV",
+                    help="answers, IDs or versions set by hand, lines 'page,question,answer' "
+                         "(page as in results.csv, e.g. scans.pdf#p2; question 1-100, id or "
+                         "version); every correction is flagged")
     cv = ap.add_argument_group("Canvas gradebook")
     cv.add_argument("--canvas", metavar="CSV",
                     help="Canvas gradebook export: match sheets to students by the last "
@@ -646,6 +699,8 @@ def main(argv=None):
     if not args.scans:
         print(f"wrote {out / 'key.csv'}")
         return
+    corrections = load_corrections(args.corrections, n, args.id_digits) if args.corrections else {}
+    used = set()
     review = fitz.open()
     rows = []
     item_right = {v: np.zeros(n, int) for v in keys}
@@ -669,9 +724,21 @@ def main(argv=None):
             if any(d != "?" for d in full_id[:unused]):
                 flags.append(f"marks left of the {args.id_digits} ID columns ({full_id})")
 
+            fix = corrections.get(label)
+            if fix:
+                used.add(label)
+            fixed_id = fix["id"] if fix else None
+            if fixed_id:
+                flags.append(f"ID set by hand: {fixed_id} (read as {sheet['student_id']})")
+                sheet["student_id"] = fixed_id
+            if fix and fix["version"]:
+                flags.append(f"version set by hand: {fix['version']} "
+                             f"(read as {sheet['version']})")
+                sheet["version"] = fix["version"]
+
             # Handwritten digits in the ID boxes fill in unbubbled columns (flagged).
             show_boxes, boxes = False, None
-            if hw_reader is not None:
+            if hw_reader is not None and not fixed_id:
                 hand = hw_reader.read(sheet["warped"], range(unused, len(full_id)))
                 sheet["student_id"], hw_flags, boxes = merge_handwritten_id(
                     sheet["student_id"], hand, HAND_T)
@@ -680,7 +747,13 @@ def main(argv=None):
 
             # Match to a student in the gradebook (may complete or correct the ID).
             student = None
-            if gradebook is not None:
+            if gradebook is not None and fixed_id and len(fixed_id) > args.id_digits:
+                student = gradebook.by_sis(fixed_id)   # a full SIS User ID set by hand
+                if student is None:
+                    flags.append(f"SIS User ID {fixed_id} not in gradebook")
+                else:
+                    sheet["student_id"] = gradebook.key(student)
+            elif gradebook is not None:
                 student, sheet["student_id"], gb_flags = gradebook.resolve(
                     sheet["student_id"], boxes)
                 flags += gb_flags
@@ -693,19 +766,31 @@ def main(argv=None):
                     kv = next(iter(keys))
                     flags.append(f"version {version} unreadable, used {kv}")
                 else:
-                    print(f"{label}: unknown version {version}, skipped")
+                    how = " (set by hand)" if fix and fix["version"] else ""
+                    print(f"{label}: unknown version {version}{how}, skipped")
                     rows.append({"page": label, "student_id": sheet["student_id"],
-                                 "version": version, "flags": "unknown version"})
+                                 "version": version, "flags": f"unknown version{how}"})
                     continue
             key = keys[kv]
             answers = sheet["answers"]
+            by_hand = sorted(fix["answers"]) if fix else []
+            if by_hand:
+                read = {"-": "blank", "*": "multiple"}
+                changes = []
+                for q in by_hand:
+                    old, new = answers[q - 1], fix["answers"][q]
+                    changes.append(f"Q{q} {'blank' if new == '-' else new} "
+                                   f"(read as {read.get(old, old)})")
+                    answers = answers[:q - 1] + new + answers[q:]
+                flags.append("set by hand: " + ", ".join(changes))
             correct, score, total = grade(answers, key, args.canceled)
             item_right[kv] += np.array([c is True for c in correct], int)
             item_count[kv] += 1
 
             if "?" in sheet["student_id"] and gradebook is None:
                 flags.append("check student ID")
-            live = [i for i, c in enumerate(correct) if c is not None]
+            # questions set by hand are already flagged above
+            live = [i for i, c in enumerate(correct) if c is not None and i + 1 not in by_hand]
             blanks = [i + 1 for i in live if answers[i] == "-"]
             multis = [i + 1 for i in live if answers[i] == "*"]
             faint = [q for q in blanks if sheet["top"][q - 1] >= faint_t]
@@ -729,12 +814,17 @@ def main(argv=None):
             header = f"ID {sheet['student_id']}{who}  v{version}  {score}/{total}{pct}"
             print(f"{label}: {header}" + (f"  [{'; '.join(flags)}]" if flags else ""))
 
-            img_out = annotate(sheet["warped"], answers, key, correct, header)
+            img_out = annotate(sheet["warped"], answers, key, correct, header, by_hand)
             if show_boxes:
                 paste_id_boxes(img_out, sheet["warped"], args.id_digits)
             ok, buf = cv2.imencode(".jpg", img_out, [cv2.IMWRITE_JPEG_QUALITY, 80])
             page = review.new_page(width=595, height=842)
             page.insert_image(page.rect, stream=buf.tobytes())
+
+    unused = [p for p in corrections if p not in used]
+    if unused:
+        print(f"warning: corrections for pages that were not graded: {', '.join(unused)} "
+              f"(use the page labels from results.csv)")
 
     if gradebook is not None:
         write_canvas(gradebook, rows, out)

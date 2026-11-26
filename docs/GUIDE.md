@@ -223,6 +223,8 @@ One page per sheet, straightened, in the same order as `results.csv`:
 - Red cross: the student's wrong choice.
 - `BLANK` and `MULTI` in orange, left of the question number.
 - A line through a question: canceled (Q15 here).
+- `HAND` in purple, with a box around the answer: an answer set from the corrections
+  file (section 7).
 - At the bottom of the page: ID, name, version and score, as in the console output.
 - When the ID came from handwriting or the gradebook had to repair it, the enlarged ID
   boxes are pasted at the bottom so you can read them yourself.
@@ -260,8 +262,8 @@ Answers:
 | Flag | Meaning | What to do |
 | --- | --- | --- |
 | `blank: [5]` | No bubble marked for question 5. Counted wrong. | Nothing, unless `review.pdf` shows a mark (see the next row). |
-| `faint mark, check: [5]` | Question 5 read as blank, but one bubble is darker than an empty one. | Look at the page. If it is a light answer, grade again with `--mark-threshold 0.28`, or adjust that score by hand. |
-| `multiple: [7]` | Two or more bubbles marked for question 7. Counted wrong. | Look at the page. A poorly erased answer reads as a second mark; if the student's choice is clear, adjust the score by hand. |
+| `faint mark, check: [5]` | Question 5 read as blank, but one bubble is darker than an empty one. | Look at the page. If it is a light answer, set it in the corrections file (section 7). When many sheets have light marks, grade again with `--mark-threshold 0.28`. |
+| `multiple: [7]` | Two or more bubbles marked for question 7. Counted wrong. | Look at the page. A poorly erased answer reads as a second mark; if the student's choice is clear, set it in the corrections file. |
 
 Student ID:
 
@@ -279,10 +281,10 @@ Gradebook (with `--canvas`):
 | --- | --- | --- |
 | `ID 31?7 completed from gradebook as 3157 (Name), check` | Only one student fits the readable digits. Exported. | Check the name against the sheet. |
 | `bubbled ID 3167 not in gradebook; used handwritten 3157 (Name), check` | The bubbles match nobody, the written boxes match one student. Exported. | Check the name against the sheet. |
-| `ID 3167 not in gradebook` | Nobody has these last digits. Not exported. | Find the student (usually a mis-bubbled digit) and enter the grade by hand. |
-| `ID 3040 belongs to 2 students (...); enter this grade by hand` | Two students share these digits. Not exported. | Read the name on the sheet and enter the grade by hand. |
-| `ID 4?7? matches 3 students in gradebook` | Too few digits readable to tell. Not exported. | Read the ID or name on the sheet and enter the grade by hand. |
-| `no readable student ID` | No ID digits at all. Not exported. | Read the name on the sheet and enter the grade by hand. |
+| `ID 3167 not in gradebook` | Nobody has these last digits. Not exported. | Find the student (usually a mis-bubbled digit) and set the ID in the corrections file. |
+| `ID 3040 belongs to 2 students (...); enter this grade by hand` | Two students share these digits. Not exported. | Read the name on the sheet and set the student's full SIS User ID in the corrections file. |
+| `ID 4?7? matches 3 students in gradebook` | Too few digits readable to tell. Not exported. | Read the ID or name on the sheet and set the ID in the corrections file. |
+| `no readable student ID` | No ID digits at all. Not exported. | Read the name on the sheet and set the ID in the corrections file. |
 | `same student as students.pdf#p9; not exported, enter by hand` | Two sheets matched the same student, for example a re-scanned page. | Keep the right one and enter that grade by hand. |
 
 Version and page:
@@ -290,8 +292,21 @@ Version and page:
 | Flag | Meaning | What to do |
 | --- | --- | --- |
 | `version 3?2 unreadable, used 322` | The Key bubbles could not be read and there is only one key, so it was used. | Nothing, if there is only one version. |
-| `unknown version` | The Key bubbles name a version with no key. The sheet is skipped. | Read the version on the page. Add its key, or grade the sheet on its own (section 7). |
+| `unknown version` | The Key bubbles name a version with no key. The sheet is skipped. | Read the version on the page. Set it in the corrections file, or add its key. |
 | `unreadable: ...` | The page could not be lined up, usually because a corner square is missing or covered. | Re-scan the page without cropping. |
+
+Corrections (with `--corrections`, section 7):
+
+| Flag | Meaning | What to do |
+| --- | --- | --- |
+| `set by hand: Q5 C (read as blank)` | The answer comes from the corrections file. | Nothing; it records what was changed. |
+| `ID set by hand: 900163040 (read as 3040)` | The ID comes from the corrections file. | Nothing. |
+| `version set by hand: 322 (read as 3?2)` | The version comes from the corrections file. | Nothing. |
+| `SIS User ID 900163040 not in gradebook` | A full SIS User ID in the corrections file matches nobody. Not exported. | Check the number in the corrections file. |
+
+A correction whose page label matches no graded page is reported when grading starts
+(`warning: corrections for pages that were not graded`); check its label against
+`results.csv`.
 
 ## 7. Fix and grade again
 
@@ -314,8 +329,36 @@ questions" box and the "Canceled questions" choice.
 **Fix a wrong answer in the key**: correct the `\correctchoice` in the LaTeX and make the
 key again (section 2), or edit the letter in `key.csv`, then grade again.
 
-**Light pencil marks**: grade again with `--mark-threshold 0.28` (window: "More options").
-Empty bubbles read about 0.02 and erased marks about 0.2, so stay above 0.22.
+**A mark the grader missed, or a student ID it could not match**: list the fix in a
+corrections file and grade with it. Each line is `page,question,answer`, with the page
+label copied from `results.csv`:
+
+```text
+page,question,answer
+students.pdf#p2,5,C
+students.pdf#p3,7,C
+students.pdf#p6,id,900163040
+```
+
+- A question number with `A` to `D` sets that answer, for a very light mark, a forgotten
+  bubble or a poor erasure; `-` clears a stray mark.
+- `id` sets the student ID: the last four digits, or the full SIS User ID when two
+  students share the last four (as above).
+- `version` sets the 3-digit key ID.
+
+```bash
+omr-grader scans.pdf --key key.csv --corrections corrections.csv \
+    --canvas gradebook.csv --canvas-assignment "Exam 2"
+```
+
+Each change is flagged in `results.csv` (`set by hand: Q5 C (read as blank)`) and marked
+`HAND` on `review.pdf`, and the scans stay as they are. Keep the file in the exam folder:
+every later grading run applies it again. In the window: the "Corrections" file in the
+Grade tab. `example/corrections.csv` has the three lines above, for the example sheets.
+
+**Light pencil marks on many sheets**: grade again with `--mark-threshold 0.28` (window:
+"More options"). Empty bubbles read about 0.02 and erased marks about 0.2, so stay above
+0.22.
 
 **A version bubbled wrong or not at all**: a key whose version is `any` grades every
 sheet, whatever is bubbled. Scan that sheet into its own PDF, copy the right line of
@@ -335,8 +378,9 @@ Give it its own `--out`: by default it would write to `graded/` and replace the 
 of the other sheets. When everyone took the same version, you can grade all the sheets
 with an `any` key.
 
-**One student's score**: for a single sheet that needs a judgment call (a smudge, a
-clear answer with a poor erasure), enter the corrected score in Canvas after the import.
+**One student's score**: for a judgment call the corrections file can't express (partial
+credit, for example), enter the score in Canvas after the import. A later import replaces
+it, so the corrections file is the better place for anything it can hold.
 
 ## 8. Import into Canvas
 
@@ -351,6 +395,8 @@ Students not in the import file keep their current grade, so the grades you ente
 hand for sheets that were not exported stay. After grading again (section 7), import the
 new file the same way. It replaces the grades of every student it contains, including
 a score you corrected by hand after the first import, so enter that correction again.
+Corrections made in the corrections file carry over, because they are applied at every
+grading run.
 
 ## 9. Practice on the example exam
 
@@ -381,6 +427,9 @@ and scores drawn on the sheets, which `results.csv` should match. The sheets are
 and noisy and include a blank (sheet 2, Q5), a double mark (sheet 3, Q7), an
 erased-and-changed answer (sheet 4, Q9) and an upside-down page (5). The output examples
 in this guide come from this run. `example/out` is not tracked by git.
+
+To try the corrections file, grade again with `--corrections example/corrections.csv`:
+sheet 2 gets Q5, sheet 3 gets Q7, and the sheet with the shared ID goes to Leo Fontaine.
 
 Without `--key`, `make_test_sheets.py` makes up two 40-question versions and also writes
 `keys.csv` and a filled key sheet, for trying several versions and `--key key_sheet.pdf`:

@@ -123,7 +123,7 @@ def summary(rows, log):
     return "\n\n".join(lines)
 
 
-def grade(scans, key_files, key_id, gradebook, assignment, cancel, canceled,
+def grade(scans, key_files, key_id, gradebook, assignment, corrections, cancel, canceled,
           num_questions, threshold, id_digits, handwriting, folder):
     scans, keys = files_of(scans), files_of(key_files)
     if not scans:
@@ -140,6 +140,8 @@ def grade(scans, key_files, key_id, gradebook, assignment, cancel, canceled,
             args += ["--num-questions", str(int(num_questions))]
         if not handwriting:
             args.append("--no-handwriting")
+        if files_of(corrections):
+            args += ["--corrections", files_of(corrections)[0]]
         if files_of(gradebook):
             if not assignment:
                 raise gr.Error("Pick the gradebook column to fill.")
@@ -219,6 +221,9 @@ def build():
                                    file_types=[".csv"])
                     assignment = gr.Dropdown(label="Gradebook column to fill", choices=[],
                                              allow_custom_value=True)
+                    corrections = gr.File(
+                        label="Corrections (optional): CSV of page,question,answer, e.g. "
+                              "students.pdf#p2,5,C (see the guide)", file_types=[".csv"])
                     cancel = gr.Textbox(label="Cancel questions (optional)",
                                         placeholder="5,12  or per version: 322:5,117:9")
                     canceled = gr.Radio([("Leave out of the total", "drop"),
@@ -249,7 +254,8 @@ def build():
                 log = gr.Textbox(lines=14, show_label=False)
 
             book.change(assignments, book, assignment)
-            go.click(grade, [scans, keys, key_id, book, assignment, cancel, canceled, nq,
+            go.click(grade, [scans, keys, key_id, book, assignment, corrections, cancel,
+                             canceled, nq,
                              thr, digits, hand, exam],
                      [status, table, flagged, log])
             open_review.click(lambda d: open_path(exam_dir(d) / "graded" / "review.pdf"),
