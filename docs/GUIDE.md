@@ -4,6 +4,12 @@ This guide follows one exam from the answer key to the Canvas gradebook, with th
 commands, what they print, and what to do with each kind of flagged sheet. The
 [README](../README.md) is the reference for every option.
 
+The grader uses OMR (optical mark recognition): it reads marks made in known places on
+a printed form. It lines up each scan using the black corner squares, then measures how
+dark each answer, Student ID and Key bubble is. Handwritten ID digits, read only when
+the ID bubbles are blank, are the one place it recognizes characters, and those reads
+are always flagged for checking.
+
 Each step is shown on the command line and in the window (`omr-grader-gui`). Both run
 the same grader, and the window shows the equivalent command under "Grader output".
 The examples use `omr-grader`, the installed command; in a clone of the repository,
