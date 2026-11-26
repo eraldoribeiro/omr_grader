@@ -11,3 +11,4 @@
 !/omrgrader/
 __pycache__/
 *.egg-info/
+!/docs/

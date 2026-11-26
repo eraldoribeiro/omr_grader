@@ -2,6 +2,9 @@
 
 Grades scanned 100-question bubble sheets (the `Sheet100QA4.pdf` layout in this repo).
 
+New to it? [docs/GUIDE.md](docs/GUIDE.md) walks through one exam from the key to the
+Canvas import, with example output and what to do about each flag.
+
 ## Install
 
 With [uv](https://docs.astral.sh/uv/), which also installs Python if needed:
@@ -65,7 +68,7 @@ See [Local window](#local-window) for details.
 
 - **Scans**: PDFs (one sheet per page) or images. Pages may be skewed or upside down.
 - **Key**: the exam's LaTeX file (below), a CSV with lines `version,answers`
-  (e.g. `322,ABCDDCBA...`), or a filled key sheet scanned as PDF/image (one page per
+  (e.g. `322,ABCDDCBA...`; the version `any` grades every sheet), or a filled key sheet scanned as PDF/image (one page per
   version; the Key bubbles give the version). Repeat `--key` to combine several.
 - **Key from the exam LaTeX**: pass the `.tex` file itself (exam class; the answer is
   the `\correctchoice` / `\CorrectChoice`). Questions are numbered in document order,
