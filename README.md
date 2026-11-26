@@ -64,20 +64,27 @@ conda:
    conda create -n omr python=3.12
    ```
 
-2. Activate it:
+2. Keep out Python packages installed in your user folder (`~/.local`), which every
+   conda environment otherwise sees and which can conflict with the grader's (once):
+
+   ```bash
+   conda env config vars set PYTHONNOUSERSITE=1 -n omr
+   ```
+
+3. Activate it:
 
    ```bash
    conda activate omr
    ```
 
-3. Install the grader into it:
+4. Install the grader into it:
 
    ```bash
    pip install git+https://github.com/eraldoribeiro/omr_grader.git
    ```
 
 This adds the same two commands, available while the environment is active: run
-`conda activate omr` in each new terminal before using them. To update, run step 3 again
+`conda activate omr` in each new terminal before using them. To update, run step 4 again
 with `--force-reinstall --no-deps` after `install`. To remove it, delete the environment:
 `conda remove -n omr --all`.
 
