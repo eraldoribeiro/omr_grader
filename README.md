@@ -82,9 +82,24 @@ Without scans, only these files and `key.csv` are written.
 
 ## Digit reader
 
-`handwriting.py` reads the ID boxes with a small CNN run in NumPy, so grading needs no
-deep-learning library. Its weights are in `digits_model.npz`. To retrain them (needs
-PyTorch and the MNIST idx files):
+`handwriting.py` reads the ID boxes with a small CNN (two convolution layers and two
+fully connected layers). PyTorch is used only to train it; the trained weights are saved
+in `digits_model.npz` (about 200 KB), and the grader runs the network in NumPy: the
+convolutions, max-pooling, matrix products and softmax take about fifteen lines. On the
+test digits the NumPy and PyTorch outputs agree to within 1e-6.
+
+Running the network in NumPy keeps grading free of a deep-learning library:
+
+- PyTorch is about 330 MB installed and is not part of a standard Anaconda `base`
+  environment; NumPy is already needed for the image processing.
+- PyTorch builds are tied to particular Python versions and hardware, which makes it the
+  install most likely to fail on another machine (a TA's laptop, another course).
+- An upgrade of a large library cannot change or break how a digit is read.
+- Importing PyTorch would add a second or two to every run, for four digits per sheet.
+
+So grading needs only the three packages above, plus the weights file in this repo.
+
+To retrain the weights (needs PyTorch and the MNIST idx files):
 
 ```bash
 python train_digits.py path/to/MNIST/raw
