@@ -30,8 +30,7 @@ pip install git+https://github.com/eraldoribeiro/omr_grader.git
 
 This adds two commands: `omr-grader` (the command line below) and `omr-grader-gui`
 (the browser window). To update, run the install again with `--reinstall` (uv) or
-`--force-reinstall --no-deps` (pip). The repository is private, so installing needs
-access to it on GitHub and git signed in (SSH, or `gh auth login`).
+`--force-reinstall --no-deps` (pip). Installing needs git, but no GitHub account.
 
 From a clone of the repository, `python omr_grader.py` and `python gui.py` do the same
 as the two commands; they need `opencv-python`, `numpy`, `pymupdf` and, for the window,
