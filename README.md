@@ -29,6 +29,13 @@ python omr_grader.py scans.pdf --key exam.tex --out graded
   student number). The 4-digit sheet prints its ID columns where the old 6-column sheet
   had columns 3-6, so the digits are read from the right-hand columns. For an old
   6-column sheet use `--id-digits 6`. Marks to the left of the ID columns are flagged.
+- **Handwritten ID**: when an ID column has no bubble marked, the digit written in the
+  box above it is read instead, if the digit reader is at least 90% sure. Every such ID
+  is flagged (`ID from handwriting, check`) and the enlarged boxes are shown at the
+  bottom of its `review.pdf` page; unclear digits stay `?` with a guess in the flags, and
+  handwriting that disagrees with the bubbles is flagged too. On synthetic scans, 95% of
+  digits were read right, 4% left as `?` and about 1% misread, hence the flag. Turn it
+  off with `--no-handwriting`.
 - The 3-digit Key field on each student sheet selects which answer key grades it
   (except a `.tex` key given without a version, which grades every sheet).
 - The number of questions graded is the key length unless `--num-questions` is given.
@@ -72,6 +79,19 @@ python omr_grader.py --key exam.tex --key-id 322 --exam-name "Exam 2" \
 - `--template` picks a different blank sheet; the default is `Sheet100QA4.pdf` here.
 
 Without scans, only these files and `key.csv` are written.
+
+## Digit reader
+
+`handwriting.py` reads the ID boxes with a small CNN run in NumPy, so grading needs no
+deep-learning library. Its weights are in `digits_model.npz`. To retrain them (needs
+PyTorch and the MNIST idx files):
+
+```bash
+python train_digits.py path/to/MNIST/raw
+```
+
+Training pastes MNIST digits into simulated scanned boxes (box lines, blur, noise,
+digits too big or off-center) and runs them through the same clean-up as real boxes.
 
 ## Testing
 

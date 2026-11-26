@@ -24,6 +24,8 @@ import cv2
 import fitz  # PyMuPDF
 import numpy as np
 
+import handwriting as hw
+
 # ---------------------------------------------------------------------------
 # Sheet layout, in pixels of the blank template rendered at 200 dpi.
 # Measured from Sheet100QA4.pdf by detecting the printed circles.
@@ -387,6 +389,56 @@ def annotate(warped, answers, key, correct, header):
 
 
 # ---------------------------------------------------------------------------
+# Handwritten Student ID boxes (fallback for unbubbled columns)
+# ---------------------------------------------------------------------------
+HAND_T = 0.9   # min network confidence to use a handwritten digit (99%+ right in tests)
+
+
+def merge_handwritten_id(bubbled, hand, threshold=HAND_T):
+    """Fill '?' ID columns from confident handwriting. Returns (id, flags).
+
+    hand is [(digit or None, confidence)] for the same columns as `bubbled`.
+    Every use of handwriting is flagged, and so is handwriting that disagrees
+    with the bubbles.
+    """
+    out = list(bubbled)
+    boxes = "".join(str(d) if d is not None and c >= threshold else "?" for d, c in hand)
+    unsure, differ = [], False
+    for i, (b, (d, c)) in enumerate(zip(bubbled, hand)):
+        if d is None:
+            continue
+        if b == "?":
+            if c >= threshold:
+                out[i] = str(d)
+            else:
+                unsure.append(f"col {i + 1} looks like {d} ({c:.0%})")
+        elif c >= threshold and str(d) != b:
+            differ = True
+    merged = "".join(out)
+    flags = []
+    if merged != bubbled:
+        flags.append(f"ID from handwriting, check: bubbles {bubbled}, boxes {boxes}")
+    if unsure:
+        flags.append(f"handwritten ID unclear: {', '.join(unsure)}")
+    if differ:
+        flags.append(f"handwritten ID {boxes} differs from bubbles {bubbled}")
+    return merged, flags
+
+
+def paste_id_boxes(img_out, warped, id_digits):
+    """Paste an enlarged view of the ID boxes at the bottom of a review page."""
+    x0 = int(hw.BOX_LEFT[len(ID_X) - id_digits]) - 8
+    x1 = int(hw.BOX_LEFT[-1] + hw.BOX_W) + 8
+    crop = cv2.cvtColor(warped[195:262, x0:x1], cv2.COLOR_GRAY2BGR)
+    big = cv2.resize(crop, None, fx=1.9, fy=1.9, interpolation=cv2.INTER_CUBIC)
+    y, x = 2020, 600
+    img_out[y:y + big.shape[0], x:x + big.shape[1]] = big
+    blue = (200, 80, 0)
+    cv2.rectangle(img_out, (x - 2, y - 2), (x + big.shape[1] + 1, y + big.shape[0] + 1), blue, 2)
+    cv2.putText(img_out, "ID boxes:", (x - 170, y + 75), cv2.FONT_HERSHEY_SIMPLEX, 0.9, blue, 2)
+
+
+# ---------------------------------------------------------------------------
 # Printable sheets (key sheet / student sheet) drawn onto the template PDF
 # ---------------------------------------------------------------------------
 DEFAULT_TEMPLATE = Path(__file__).resolve().parent / "Sheet100QA4.pdf"
@@ -461,6 +513,8 @@ def main(argv=None):
     ap.add_argument("--id-digits", type=int, default=4, choices=range(1, len(ID_X) + 1),
                     metavar=f"1-{len(ID_X)}",
                     help="number of Student ID digits (default 4); they are read from the right-hand columns, where the 4-digit sheet prints them")
+    ap.add_argument("--no-handwriting", action="store_true",
+                    help="do not read the handwritten ID boxes")
     sheets = ap.add_argument_group("printable sheets")
     sheets.add_argument("--key-sheet", metavar="PDF",
                         help="write a filled answer-key sheet (one page per version)")
@@ -476,6 +530,9 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     MARK_T = args.mark_threshold
+    hw_reader = None if args.no_handwriting else hw.reader()
+    if hw_reader is None and not args.no_handwriting:
+        print(f"note: {hw.MODEL_PATH.name} not found; handwritten IDs are not read")
     faint_t = max(0.12, MARK_T / 2)  # blank questions darker than this get flagged
 
     keys = {}
@@ -551,6 +608,15 @@ def main(argv=None):
             if any(d != "?" for d in full_id[:unused]):
                 flags.append(f"marks left of the {args.id_digits} ID columns ({full_id})")
 
+            # Handwritten digits in the ID boxes fill in unbubbled columns (flagged).
+            show_boxes = False
+            if hw_reader is not None:
+                hand = hw_reader.read(sheet["warped"], range(unused, len(full_id)))
+                sheet["student_id"], hw_flags = merge_handwritten_id(
+                    sheet["student_id"], hand, HAND_T)
+                flags += hw_flags
+                show_boxes = bool(hw_flags)
+
             version = sheet["version"]  # as bubbled on the sheet
             kv = version if version in keys else ANY if ANY in keys else None
             if kv is None:
@@ -592,6 +658,8 @@ def main(argv=None):
             print(f"{label}: {header}" + (f"  [{'; '.join(flags)}]" if flags else ""))
 
             img_out = annotate(sheet["warped"], answers, key, correct, header)
+            if show_boxes:
+                paste_id_boxes(img_out, sheet["warped"], args.id_digits)
             ok, buf = cv2.imencode(".jpg", img_out, [cv2.IMWRITE_JPEG_QUALITY, 80])
             page = review.new_page(width=595, height=842)
             page.insert_image(page.rect, stream=buf.tobytes())
