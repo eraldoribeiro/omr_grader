@@ -4,9 +4,22 @@ Grades scanned 100-question bubble sheets (the `Sheet100QA4.pdf` layout in this 
 
 Requires `opencv-python`, `numpy`, `pymupdf`.
 
+Typical use for one exam:
+
 ```bash
-python omr_grader.py scans.pdf --key exam.tex --out graded
+# 1. Before the exam: the key from the LaTeX, a key sheet to check, the sheet to print
+python omr_grader.py --key exam2.tex --key-id 322 --exam-name "Exam 2" \
+    --course "CSE4001 Fall 2026" --key-sheet exam2/key_sheet.pdf \
+    --student-sheet exam2/student_sheet.pdf --out exam2
+
+# 2. After the exam: grade the scans and fill the Canvas gradebook column
+python omr_grader.py exam2/scans.pdf --key exam2/key.csv --out exam2/graded \
+    --canvas exam2/gradebook.csv --canvas-assignment "Exam 2"
 ```
+
+Step 2 without `--canvas` just grades. Check the `flags` column of
+`exam2/graded/results.csv` and the flagged pages of `review.pdf`, then import
+`exam2/graded/canvas_import.csv` in Canvas (Grades > Import).
 
 - **Scans**: PDFs (one sheet per page) or images. Pages may be skewed or upside down.
 - **Key**: the exam's LaTeX file (below), a CSV with lines `version,answers`
