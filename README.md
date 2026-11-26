@@ -21,6 +21,8 @@ Step 2 without `--canvas` just grades. Check the `flags` column of
 `exam2/graded/results.csv` and the flagged pages of `review.pdf`, then import
 `exam2/graded/canvas_import.csv` in Canvas (Grades > Import).
 
+To use a form in the browser instead of the command line, see [Local window](#local-window).
+
 - **Scans**: PDFs (one sheet per page) or images. Pages may be skewed or upside down.
 - **Key**: the exam's LaTeX file (below), a CSV with lines `version,answers`
   (e.g. `322,ABCDDCBA...`), or a filled key sheet scanned as PDF/image (one page per
@@ -118,6 +120,31 @@ python omr_grader.py --key exam.tex --key-id 322 --exam-name "Exam 2" \
 - `--template` picks a different blank sheet; the default is `Sheet100QA4.pdf` here.
 
 Without scans, only these files and `key.csv` are written.
+
+## Local window
+
+`gui.py` puts the same steps in a form that opens in your browser. It needs Gradio as
+well (`pip install gradio`, already in a standard Anaconda `base`):
+
+```bash
+python gui.py
+```
+
+- **Grade** tab: add the scans and the key (the exam `.tex`, with its `.aux` for the
+  question-count check, a key CSV or a scanned key sheet), optionally the Canvas
+  gradebook (its assignment columns fill the dropdown), cancellations and the output
+  folder. After grading it shows a summary, the sheets to check and all sheets, with
+  buttons that open `review.pdf` and the output folder.
+- **Prepare exam** tab: the key, key sheet and student sheet from the LaTeX or a CSV,
+  with the key shown ten questions per line for checking.
+- "More options" holds the mark threshold, number of questions, ID digits and the
+  handwritten-ID switch. The grader's output, starting with the equivalent command line,
+  is under "Grader output".
+
+The page is served only to this computer (`127.0.0.1`), with no share link and Gradio's
+usage statistics off. Each run copies the uploads to a temporary folder deleted when the
+run ends; Gradio's own copies of uploads (in the system temporary folder) are deleted after
+30 minutes while it runs, and all of them the next time `gui.py` starts. Results are written to the output folder you choose.
 
 ## Digit reader
 

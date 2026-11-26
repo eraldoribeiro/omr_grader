@@ -10,3 +10,4 @@
 !/train_digits.py
 !/digits_model.npz
 !/canvas.py
+!/gui.py
