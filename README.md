@@ -25,9 +25,10 @@ python omr_grader.py scans.pdf --key exam.tex --out graded
   it. In a CSV key use `X`, `-` or `*`. You can also cancel from the command line:
   `--cancel 5,12` (all versions) or `--cancel 322:5,117:9`. By default canceled questions
   are left out of the total (`--canceled drop`); `--canceled credit` gives everyone the point.
-- **Student ID**: the first 4 ID columns are read (the sheet asks for the last 4 digits
-  of the student number). Use `--id-digits 6` for all six. Marks in the unused columns
-  are flagged.
+- **Student ID**: 4 digits by default (the sheet asks for the last 4 digits of the
+  student number). The 4-digit sheet prints its ID columns where the old 6-column sheet
+  had columns 3-6, so the digits are read from the right-hand columns. For an old
+  6-column sheet use `--id-digits 6`. Marks to the left of the ID columns are flagged.
 - The 3-digit Key field on each student sheet selects which answer key grades it
   (except a `.tex` key given without a version, which grades every sheet).
 - The number of questions graded is the key length unless `--num-questions` is given.
@@ -60,8 +61,7 @@ The blank template, `Sheet100QA4.pdf`, is in the repo.
 
 ```bash
 python make_test_sheets.py Sheet100QA4.pdf test
-python omr_grader.py test/students.pdf --key test/keys.csv --id-digits 6 --out test/graded
+python omr_grader.py test/students.pdf --key test/keys.csv --out test/graded
 ```
 
-`test/graded/results.csv` should match `test/truth.csv`. The test sheets fill all six ID
-columns, hence `--id-digits 6`.
+`test/graded/results.csv` should match `test/truth.csv`.

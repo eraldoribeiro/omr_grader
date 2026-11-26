@@ -411,7 +411,7 @@ def main(argv=None):
                          f"but keep it above erasures (about 0.2)")
     ap.add_argument("--id-digits", type=int, default=4, choices=range(1, len(ID_X) + 1),
                     metavar=f"1-{len(ID_X)}",
-                    help="number of Student ID columns used, from the left (default 4)")
+                    help="number of Student ID digits (default 4); they are read from the right-hand columns, where the 4-digit sheet prints them")
     args = ap.parse_args(argv)
 
     MARK_T = args.mark_threshold
@@ -460,11 +460,13 @@ def main(argv=None):
                 rows.append({"page": label, "flags": f"unreadable: {e}"})
                 continue
 
-            # Only the first --id-digits columns hold the ID; marks past them are flagged.
+            # The ID is in the right-hand --id-digits of the six column positions: the
+            # 4-digit sheet prints only positions 3-6. Marks to their left are flagged.
             full_id = sheet["student_id"]
-            sheet["student_id"] = full_id[:args.id_digits]
-            if any(d != "?" for d in full_id[args.id_digits:]):
-                flags.append(f"ID columns past {args.id_digits} are filled ({full_id})")
+            unused = len(full_id) - args.id_digits
+            sheet["student_id"] = full_id[unused:]
+            if any(d != "?" for d in full_id[:unused]):
+                flags.append(f"marks left of the {args.id_digits} ID columns ({full_id})")
 
             version = sheet["version"]  # as bubbled on the sheet
             kv = version if version in keys else ANY if ANY in keys else None

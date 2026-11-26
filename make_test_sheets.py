@@ -94,11 +94,10 @@ def main(template, outdir):
     for s in range(6):
         img = base.copy()
         version = "322" if s % 2 == 0 else "117"
-        if version != "322":
-            set_version(img, version)
-        sid = "".join(str(d) for d in RNG.integers(0, 10, 6))
-        for col, d in enumerate(sid):
-            fill(img, g.ID_X[col], g.DIGIT_Y[int(d)], level=RNG.uniform(40, 110))
+        set_version(img, version)
+        sid = "".join(str(d) for d in RNG.integers(0, 10, 4))
+        for x, d in zip(g.ID_X[-4:], sid):  # the 4-digit sheet's columns
+            fill(img, x, g.DIGIT_Y[int(d)], level=RNG.uniform(40, 110))
         answers = []
         for q in range(1, n + 1):
             correct = keys[version][q - 1]
