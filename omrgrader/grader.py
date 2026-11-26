@@ -22,7 +22,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import cv2
-import fitz  # PyMuPDF
+import pymupdf as fitz
 import numpy as np
 
 from . import canvas
