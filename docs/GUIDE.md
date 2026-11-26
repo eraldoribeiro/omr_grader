@@ -74,8 +74,8 @@ wrote key.csv
 ```
 
 - `key.csv` is the key in plain text (`322,BCADCCCCAD...`). The grading step uses it.
-- `key_sheet.pdf` is the answer sheet with the key bubbled in. Look it over against the
-  exam: a wrong `\correctchoice` shows up here before it costs anyone points.
+- `key_sheet.pdf` is the answer sheet with the key bubbled in. Compare it with the exam
+  to catch a wrong `\correctchoice` before grading.
 - `student_sheet.pdf` is the blank sheet to print, with the exam name, course and key
   ID filled in.
 
@@ -122,8 +122,9 @@ grading, each sheet is graded with the key whose ID the student bubbled.
 
 - Put all sheets in one PDF, one sheet per page (several PDFs also work).
 - 200 to 300 dpi, grayscale or black and white.
-- Order and orientation don't matter: crooked and upside-down pages are straightened.
-  The six black corner squares must be on the page, so don't crop the edges.
+- Page order doesn't matter. Crooked and upside-down pages are straightened, but a
+  sideways page fails as `unreadable`, so rotate those in the scanner software.
+- The six black corner squares must be on the page, so don't crop the edges.
 - Scan the sheets as they are. Students who wrote their ID in the boxes without
   bubbling it are handled in step 6.
 
@@ -135,8 +136,8 @@ omr-grader scans.pdf --key key.csv \
 ```
 
 The results go to a `graded` folder next to the scans, here `exam2/graded`; `--out`
-picks another folder. Leave out the last line to grade without the gradebook. The output (from the test sheets
-in section 9):
+picks another folder. Leave out the last line to grade without the gradebook. The output
+from the test sheets of section 9:
 
 ```text
 gradebook: 13 students; column 'Exam 2 (5805405)' (100 points)
@@ -154,7 +155,7 @@ canvas: 5 grades in graded/canvas_import.csv; 1 sheet(s) not matched, 0 student(
 wrote graded/results.csv, graded/item_analysis.csv, graded/review.pdf
 ```
 
-Read the first lines before anything else:
+Check the first lines:
 
 - The gradebook line names the column that will be filled and its points. If the
   column name is wrong, the grader stops and lists the assignments it found.
@@ -204,8 +205,8 @@ One page per sheet, straightened, in the same order as `results.csv`:
 - When the ID came from handwriting or the gradebook had to repair it, the enlarged ID
   boxes are pasted at the bottom so you can read them yourself.
 
-Look at every page that has a flag. The other pages are worth a quick scroll the first
-time you use the grader on a new scanner.
+Look at every page that has a flag. The first time you use a new scanner, scroll
+through the other pages too.
 
 ### item_analysis.csv
 
@@ -218,8 +219,8 @@ version,question,key,percent_correct
 322,3,C,100.0
 ```
 
-A question that almost nobody got right is worth a second look: the key may be wrong,
-or the question may be ambiguous. Section 7 shows how to cancel it.
+When almost nobody got a question right, check its key and its wording. Section 7
+shows how to cancel it.
 
 ### canvas_import.csv and absent.csv
 
@@ -273,8 +274,8 @@ Version and page:
 ## 7. Fix and grade again
 
 Grading takes a few seconds, and running the same command again replaces everything in
-`graded/`. So the usual way to fix something is to change the input and grade
-again, not to edit the results.
+`graded/`, including any edits made there. To fix something, change the key, the options
+or the scans, and grade again.
 
 **Cancel a question** (after the item analysis, or a mistake found in class):
 
@@ -297,7 +298,7 @@ Empty bubbles read about 0.02 and erased marks about 0.2, so stay above 0.22.
 **A version bubbled wrong or not at all**: a key whose version is `any` grades every
 sheet, whatever is bubbled. Scan that sheet into its own PDF, copy the right line of
 `key.csv` into a new file with the version changed to `any`, and grade the sheet on
-its own:
+its own (a `.tex` key given without a key ID works the same way):
 
 ```text
 version,answers
@@ -309,10 +310,8 @@ omr-grader late_sheet.pdf --key key_any.csv --out graded_late
 ```
 
 Give it its own `--out`: by default it would write to `graded/` and replace the results
-of the other sheets.
-
-(A `.tex` key given without a key ID does the same.) When everyone took the same version,
-grade all the sheets this way.
+of the other sheets. When everyone took the same version, you can grade all the sheets
+with an `any` key.
 
 **One student's score**: for a single sheet that needs a judgment call (a smudge, a
 clear answer with a poor erasure), enter the corrected score in Canvas after the import.
@@ -326,9 +325,10 @@ clear answer with a poor erasure), enter the corrected score in Canvas after the
 3. Save. Then enter by hand the grades for the sheets flagged "Not exported" in
    section 6.
 
-Students not in the import file keep their current grade, so importing never erases
-grades you entered by hand. After grading again (section 7), import the new file the same
-way; it replaces the grades of the students it contains.
+Students not in the import file keep their current grade, so the grades you enter by
+hand for sheets that were not exported stay. After grading again (section 7), import the
+new file the same way. It replaces the grades of every student it contains, including
+a score you corrected by hand after the first import, so enter that correction again.
 
 ## 9. Practice on test sheets
 

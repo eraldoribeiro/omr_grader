@@ -2,8 +2,8 @@
 
 Grades scanned 100-question bubble sheets (the `Sheet100QA4.pdf` layout in this repo).
 
-New to it? [docs/GUIDE.md](docs/GUIDE.md) walks through one exam from the key to the
-Canvas import, with example output and what to do about each flag.
+[docs/GUIDE.md](docs/GUIDE.md) walks through one exam from the key to the Canvas
+import, with example output and what to do about each flag.
 
 ## Install
 
@@ -49,7 +49,7 @@ python omr_grader.py exam2/scans.pdf --key exam2/key.csv \
 ```
 
 The results go to `exam2/graded`, next to the scans (`--out` picks another folder).
-Step 2 without `--canvas` just grades. Check the `flags` column of
+Step 2 without `--canvas` only grades. Check the `flags` column of
 `exam2/graded/results.csv` and the flagged pages of `review.pdf`, then import
 `exam2/graded/canvas_import.csv` in Canvas (Grades > Import).
 
@@ -72,8 +72,9 @@ See [Local window](#local-window) for details.
 
 - **Scans**: PDFs (one sheet per page) or images. Pages may be skewed or upside down.
 - **Key**: the exam's LaTeX file (below), a CSV with lines `version,answers`
-  (e.g. `322,ABCDDCBA...`; the version `any` grades every sheet), or a filled key sheet scanned as PDF/image (one page per
-  version; the Key bubbles give the version). Repeat `--key` to combine several.
+  (e.g. `322,ABCDDCBA...`; the version `any` grades every sheet), or a filled key sheet
+  scanned as PDF/image (one page per version; the Key bubbles give the version).
+  Repeat `--key` to combine several.
 - **Key from the exam LaTeX**: pass the `.tex` file itself (exam class; the answer is
   the `\correctchoice` / `\CorrectChoice`). Questions are numbered in document order,
   skipping commented lines and code listings, and the count is checked against the
@@ -83,10 +84,11 @@ See [Local window](#local-window) for details.
   the exam, run with no scans: `python omr_grader.py --key exam.tex --out exam2` writes
   only `exam2/key.csv`.
 - **Canceled questions**: on a key sheet, leave the question blank or fill all its bubbles.
-  A blank at the very end of the key just shortens it, so pass `--num-questions` to keep
+  A blank at the very end of the key shortens it, so pass `--num-questions` to keep
   it. In a CSV key use `X`, `-` or `*`. You can also cancel from the command line:
-  `--cancel 5,12` (all versions) or `--cancel 322:5,117:9`. By default canceled questions
-  are left out of the total (`--canceled drop`); `--canceled credit` gives everyone the point.
+  `--cancel 5,12` (all versions) or `--cancel 322:5,117:9`. By default canceled
+  questions are left out of the total (`--canceled drop`); `--canceled credit` gives
+  everyone the point.
 - **Student ID**: 4 digits by default (the sheet asks for the last 4 digits of the
   student number). The 4-digit sheet prints its ID columns where the old 6-column sheet
   had columns 3-6, so the digits are read from the right-hand columns. For an old
@@ -96,15 +98,15 @@ See [Local window](#local-window) for details.
   is flagged (`ID from handwriting, check`) and the enlarged boxes are shown at the
   bottom of its `review.pdf` page; unclear digits stay `?` with a guess in the flags, and
   handwriting that disagrees with the bubbles is flagged too. On synthetic scans, 95% of
-  digits were read right, 4% left as `?` and about 1% misread, hence the flag. Turn it
-  off with `--no-handwriting`.
+  digits were read right, 4% were left as `?` and about 1% were misread. Turn it off
+  with `--no-handwriting`.
 - The 3-digit Key field on each student sheet selects which answer key grades it
   (except a `.tex` key given without a version, which grades every sheet).
 - The number of questions graded is the key length unless `--num-questions` is given.
 
 Outputs in `--out` (default: a `graded` folder next to the first scan):
 
-- `key.csv`: the key actually used, after cancellations.
+- `key.csv`: the key used for grading, after cancellations.
 - `results.csv`: student ID, version, score, total, percent, the answers read (`-` blank,
   `*` multiple marks), and flags for unreadable ID digits, marks in unused ID columns,
   blanks, faint marks and multiple marks.
@@ -181,9 +183,8 @@ omr-grader-gui
 The "Exam folder" at the top applies to both tabs: Prepare exam writes the key and
 sheets into it, and grading writes to its `graded` folder. It starts as the folder the
 window was started from (in Finder, Option-Command-C copies a folder's path to paste
-in). The header links to
-[docs/GUIDE.md](docs/GUIDE.md), which shows each step both in the window and on the
-command line.
+in). The header links to [docs/GUIDE.md](docs/GUIDE.md), which shows each step both in
+the window and on the command line.
 
 - **Grade** tab: add the scans and the key (the exam `.tex`, with its `.aux` for the
   question-count check, a key CSV or a scanned key sheet), optionally the Canvas
@@ -198,16 +199,17 @@ command line.
 
 The page is served only to this computer (`127.0.0.1`), with no share link and Gradio's
 usage statistics off. Each run copies the uploads to a temporary folder deleted when the
-run ends; Gradio's own copies of uploads (in the system temporary folder) are deleted after
-30 minutes while it runs, and all of them the next time the window starts. Results are written to the exam folder.
+run ends. Gradio's own copies of uploads (in the system temporary folder) are deleted
+after 30 minutes while it runs, and all of them the next time the window starts. Results
+are written to the exam folder.
 
 ## Digit reader
 
-`omrgrader/handwriting.py` reads the ID boxes with a small CNN (two convolution layers and two
-fully connected layers). PyTorch is used only to train it; the trained weights are saved
-in `digits_model.npz` (about 200 KB), and the grader runs the network in NumPy: the
-convolutions, max-pooling, matrix products and softmax take about fifteen lines. On the
-test digits the NumPy and PyTorch outputs agree to within 1e-6.
+`omrgrader/handwriting.py` reads the ID boxes with a small CNN (two convolution layers
+and two fully connected layers). PyTorch is used only to train it; the trained weights
+are saved in `digits_model.npz` (about 200 KB), and the grader runs the network in
+NumPy: the convolutions, max-pooling, matrix products and softmax take about fifteen
+lines. On the test digits the NumPy and PyTorch outputs agree to within 1e-6.
 
 Running the network in NumPy keeps grading free of a deep-learning library:
 
@@ -218,10 +220,10 @@ Running the network in NumPy keeps grading free of a deep-learning library:
 - An upgrade of a large library cannot change or break how a digit is read.
 - Importing PyTorch would add a second or two to every run, for four digits per sheet.
 
-So grading needs only the three packages above, plus the weights file in this repo.
+Grading needs only the three packages above and the weights file in this repo.
 
-The network itself is written out in `omrgrader/handwriting.py`; the weights file holds only the
-learned numbers:
+The network itself is written out in `omrgrader/handwriting.py`; the weights file holds
+only the learned numbers:
 
 - `_conv`: a convolution layer (each 3x3 filter slid over the image with NumPy's
   `sliding_window_view` and `einsum`, plus the bias).

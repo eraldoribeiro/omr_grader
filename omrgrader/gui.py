@@ -198,7 +198,7 @@ def build():
     with gr.Blocks(title="Bubble-sheet grader", delete_cache=(1800, 1800)) as app:
         gr.Markdown("# Bubble-sheet grader\nRuns on this computer only. "
                     "Uploaded files are deleted after each run. "
-                    f"New to it? Read the [step-by-step guide]({GUIDE_URL}).")
+                    f"[Step-by-step guide]({GUIDE_URL}).")
         exam = gr.Textbox(label="Exam folder", value=str(Path.cwd()),
                           info="Prepare exam writes the key and sheets here; grading writes "
                                "to its graded folder. In Finder, Option-Command-C copies a "
