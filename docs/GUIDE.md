@@ -231,6 +231,11 @@ One page per sheet, straightened, in the same order as `results.csv`:
   a sheet with corrections there are two lines: "As read" (blue) with the ID, version
   and score the grader read, and "Corrected" (purple) with the result after the
   corrections file and how many items were set by hand.
+
+Part of a corrected page: sheet 3 graded with `example/corrections.csv`, which sets its
+double-marked Q7 to C.
+
+![A corrected page of review.pdf](review_corrected_example.jpg)
 - When the ID came from handwriting or the gradebook had to repair it, the enlarged ID
   boxes are pasted at the bottom so you can read them yourself.
 
