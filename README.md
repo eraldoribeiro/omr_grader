@@ -40,6 +40,17 @@ as the two commands; they need `opencv-python`, `numpy`, `pymupdf` and, for the 
 
 ## Workflow
 
+```mermaid
+flowchart LR
+    A["<b>1. Prepare</b><br/>exam.tex → key.csv,<br/>key sheet, student sheet"]
+    B["<b>2. Give and scan</b><br/>print the student sheet,<br/>scan into scans.pdf"]
+    C["<b>3. Grade</b><br/>scans + key + gradebook<br/>→ graded/"]
+    D["<b>4. Check</b><br/>flagged sheets in<br/>results.csv, review.pdf"]
+    E["<b>5. Import</b><br/>canvas_import.csv<br/>into Canvas"]
+    A --> B --> C --> D --> E
+    D -. "fix and grade again" .-> C
+```
+
 Typical use for one exam:
 
 ```bash

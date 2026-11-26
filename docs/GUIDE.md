@@ -10,6 +10,19 @@ dark each answer, Student ID and Key bubble is. Handwritten ID digits, read only
 the ID bubbles are blank, are the one place it recognizes characters, and those reads
 are always flagged for checking.
 
+The steps, and the sections of this guide that cover them:
+
+```mermaid
+flowchart LR
+    A["<b>1. Prepare</b> (§2)<br/>exam.tex → key.csv,<br/>key sheet, student sheet"]
+    B["<b>2. Give and scan</b> (§3)<br/>print the student sheet,<br/>scan into scans.pdf"]
+    C["<b>3. Grade</b> (§4)<br/>scans + key + gradebook<br/>→ graded/"]
+    D["<b>4. Check</b> (§5, §6)<br/>flagged sheets in<br/>results.csv, review.pdf"]
+    E["<b>5. Import</b> (§8)<br/>canvas_import.csv<br/>into Canvas"]
+    A --> B --> C --> D --> E
+    D -. "fix and grade again (§7)" .-> C
+```
+
 Each step is shown on the command line and in the window (`omr-grader-gui`). Both run
 the same grader, and the window shows the equivalent command under "Grader output".
 The examples use `omr-grader`, the installed command; in a clone of the repository,
