@@ -189,6 +189,8 @@ In the window: **Grade** tab, with the same exam folder at the top. Add `scans.p
 `key.csv` and `gradebook.csv`, pick "Exam 2" in the column dropdown (it lists the
 gradebook's assignments), and click "Grade". The results go to `exam2/graded`. The
 summary shows the mean, median and range, then the sheets to check and all sheets.
+Leave the "Corrections" box empty the first time; after checking the flagged sheets,
+add your corrections file there and grade again (section 7).
 
 ## 5. Read the results
 
