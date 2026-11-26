@@ -58,6 +58,32 @@ so going below about 0.22 risks counting an erased-and-left-empty question as an
 A question read as blank whose darkest bubble is still above half the threshold is
 flagged `faint mark, check` so you can look at it in `review.pdf`.
 
+## Canvas gradebook
+
+Export the gradebook from Canvas (Grades > Export > CSV) and pass it with the assignment
+to fill:
+
+```bash
+python omr_grader.py scans.pdf --key exam2/key.csv --out exam2/graded \
+    --canvas exam2/gradebook.csv --canvas-assignment "Exam 2"
+```
+
+- Each sheet's ID is matched to the last digits (`--id-digits`, default 4) of a
+  student's **SIS User ID**, the university student number. The name and SIS User ID are
+  added to `results.csv`.
+- The gradebook also repairs IDs, always flagged: an ID with unreadable digits (`47?1`)
+  is completed when exactly one student fits, and when the bubbled ID matches nobody but
+  the handwritten one does, the handwritten one is used.
+- Not exported, flagged in `results.csv`: IDs matching no student, IDs shared by two
+  students in the class (also warned at startup), and students with more than one sheet.
+- `canvas_import.csv`: the identity columns plus the assignment column, one row per
+  matched student, score scaled to the assignment's points possible. Import it with
+  Grades > Import. Students not in the file keep their current Canvas grade.
+- `absent.csv`: students in the gradebook with no sheet.
+
+The gradebook holds student names and IDs, so keep it out of the repo (the `.gitignore`
+already does).
+
 ## Printable sheets
 
 The blank template has no course, exam or key filled in, so it works for any course.

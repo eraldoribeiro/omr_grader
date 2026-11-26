@@ -18,12 +18,14 @@ import argparse
 import csv
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 import cv2
 import fitz  # PyMuPDF
 import numpy as np
 
+import canvas
 import handwriting as hw
 
 # ---------------------------------------------------------------------------
@@ -395,7 +397,9 @@ HAND_T = 0.9   # min network confidence to use a handwritten digit (99%+ right i
 
 
 def merge_handwritten_id(bubbled, hand, threshold=HAND_T):
-    """Fill '?' ID columns from confident handwriting. Returns (id, flags).
+    """Fill '?' ID columns from confident handwriting. Returns (id, flags, boxes).
+
+    boxes is the handwritten ID on its own ('?' where unclear or empty).
 
     hand is [(digit or None, confidence)] for the same columns as `bubbled`.
     Every use of handwriting is flagged, and so is handwriting that disagrees
@@ -422,7 +426,7 @@ def merge_handwritten_id(bubbled, hand, threshold=HAND_T):
         flags.append(f"handwritten ID unclear: {', '.join(unsure)}")
     if differ:
         flags.append(f"handwritten ID {boxes} differs from bubbles {bubbled}")
-    return merged, flags
+    return merged, flags, boxes
 
 
 def paste_id_boxes(img_out, warped, id_digits):
@@ -487,6 +491,39 @@ def write_sheets(template, out_path, sheets):
     doc.save(out_path, garbage=3, deflate=True)
 
 
+def write_canvas(gradebook, rows, out):
+    """Write OUT/canvas_import.csv and OUT/absent.csv; flag duplicate sheets.
+
+    Only students with exactly one matched, graded sheet go into the import, so
+    Canvas leaves everyone else's grade unchanged.
+    """
+    pages = defaultdict(list)
+    for r in rows:
+        if r.get("sis_user_id"):
+            pages[r["sis_user_id"]].append(r)
+    grades = {}
+    for sis, rs in pages.items():
+        if len(rs) > 1:
+            for r in rs:
+                others = ", ".join(o["page"] for o in rs if o is not r)
+                r["flags"] = "; ".join(filter(None, [
+                    r["flags"], f"same student as {others}; not exported, enter by hand"]))
+        elif rs[0]["total"]:
+            grades[sis] = rs[0]["score"] / rs[0]["total"] * gradebook.points
+
+    gradebook.write_import(out / "canvas_import.csv", grades)
+    absent = [s for s in gradebook.students if s["SIS User ID"] not in pages]
+    with open(out / "absent.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["Student", "SIS User ID"])
+        w.writerows([s["Student"], s["SIS User ID"]] for s in absent)
+    unmatched = sum(1 for r in rows if not r.get("sis_user_id"))
+    print(f"canvas: {len(grades)} grades in {out / 'canvas_import.csv'}; "
+          f"{unmatched} sheet(s) not matched, {len(pages) - len(grades)} student(s) with "
+          f"several sheets (see flags); {len(absent)} student(s) without a sheet "
+          f"({out / 'absent.csv'})")
+
+
 def main(argv=None):
     global MARK_T
     ap = argparse.ArgumentParser(description=__doc__,
@@ -515,6 +552,12 @@ def main(argv=None):
                     help="number of Student ID digits (default 4); they are read from the right-hand columns, where the 4-digit sheet prints them")
     ap.add_argument("--no-handwriting", action="store_true",
                     help="do not read the handwritten ID boxes")
+    cv = ap.add_argument_group("Canvas gradebook")
+    cv.add_argument("--canvas", metavar="CSV",
+                    help="Canvas gradebook export: match sheets to students by the last "
+                         "--id-digits of their SIS User ID and write OUT/canvas_import.csv")
+    cv.add_argument("--canvas-assignment", metavar="NAME",
+                    help="gradebook column to fill, e.g. 'Exam 2' (required with --canvas)")
     sheets = ap.add_argument_group("printable sheets")
     sheets.add_argument("--key-sheet", metavar="PDF",
                         help="write a filled answer-key sheet (one page per version)")
@@ -534,6 +577,20 @@ def main(argv=None):
     if hw_reader is None and not args.no_handwriting:
         print(f"note: {hw.MODEL_PATH.name} not found; handwritten IDs are not read")
     faint_t = max(0.12, MARK_T / 2)  # blank questions darker than this get flagged
+
+    gradebook = None
+    if args.canvas:
+        if not args.canvas_assignment:
+            sys.exit("--canvas needs --canvas-assignment, e.g. --canvas-assignment 'Exam 2'")
+        try:
+            gradebook = canvas.Gradebook(args.canvas, args.canvas_assignment, args.id_digits)
+        except ValueError as e:
+            sys.exit(str(e))
+        print(f"gradebook: {len(gradebook.students)} students; column "
+              f"{gradebook.column!r} ({gradebook.points:g} points)")
+        for k, group in gradebook.shared.items():
+            print(f"  warning: {', '.join(s['Student'] for s in group)} share ID digits {k}; "
+                  f"their sheets cannot be matched automatically")
 
     keys = {}
     for spec in args.key:
@@ -609,13 +666,21 @@ def main(argv=None):
                 flags.append(f"marks left of the {args.id_digits} ID columns ({full_id})")
 
             # Handwritten digits in the ID boxes fill in unbubbled columns (flagged).
-            show_boxes = False
+            show_boxes, boxes = False, None
             if hw_reader is not None:
                 hand = hw_reader.read(sheet["warped"], range(unused, len(full_id)))
-                sheet["student_id"], hw_flags = merge_handwritten_id(
+                sheet["student_id"], hw_flags, boxes = merge_handwritten_id(
                     sheet["student_id"], hand, HAND_T)
                 flags += hw_flags
                 show_boxes = bool(hw_flags)
+
+            # Match to a student in the gradebook (may complete or correct the ID).
+            student = None
+            if gradebook is not None:
+                student, sheet["student_id"], gb_flags = gradebook.resolve(
+                    sheet["student_id"], boxes)
+                flags += gb_flags
+                show_boxes = show_boxes or bool(gb_flags)
 
             version = sheet["version"]  # as bubbled on the sheet
             kv = version if version in keys else ANY if ANY in keys else None
@@ -634,7 +699,7 @@ def main(argv=None):
             item_right[kv] += np.array([c is True for c in correct], int)
             item_count[kv] += 1
 
-            if "?" in sheet["student_id"]:
+            if "?" in sheet["student_id"] and gradebook is None:
                 flags.append("check student ID")
             live = [i for i, c in enumerate(correct) if c is not None]
             blanks = [i + 1 for i in live if answers[i] == "-"]
@@ -648,13 +713,16 @@ def main(argv=None):
                 flags.append(f"multiple: {multis}")
 
             rows.append({
-                "page": label, "student_id": sheet["student_id"], "version": version,
-                "score": score, "total": total,
+                "page": label, "student_id": sheet["student_id"],
+                "name": student["Student"] if student else "",
+                "sis_user_id": student["SIS User ID"] if student else "",
+                "version": version, "score": score, "total": total,
                 "percent": round(100 * score / total, 1) if total else "",
                 "answers": answers, "flags": "; ".join(flags),
             })
             pct = f"  {100 * score / total:.1f}%" if total else ""
-            header = f"ID {sheet['student_id']}  v{version}  {score}/{total}{pct}"
+            who = f"  {student['Student']}" if student else ""
+            header = f"ID {sheet['student_id']}{who}  v{version}  {score}/{total}{pct}"
             print(f"{label}: {header}" + (f"  [{'; '.join(flags)}]" if flags else ""))
 
             img_out = annotate(sheet["warped"], answers, key, correct, header)
@@ -664,9 +732,14 @@ def main(argv=None):
             page = review.new_page(width=595, height=842)
             page.insert_image(page.rect, stream=buf.tobytes())
 
+    if gradebook is not None:
+        write_canvas(gradebook, rows, out)
+
     fields = ["page", "student_id", "version", "score", "total", "percent", "answers", "flags"]
+    if gradebook is not None:
+        fields[2:2] = ["name", "sis_user_id"]
     with open(out / "results.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fields)
+        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         w.writerows(rows)
 
