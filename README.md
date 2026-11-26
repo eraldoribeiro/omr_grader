@@ -2,6 +2,11 @@
 
 Grades scanned 100-question bubble sheets (the `Sheet100QA4.pdf` layout in this repo).
 
+OMR (optical mark recognition) reads marks made in known places on a printed form. The
+grader lines up each scan using the black corner squares, then measures how dark each
+answer, Student ID and Key bubble is. It needs no character recognition, except for the
+optional reading of handwritten ID digits (see [Digit reader](#digit-reader)).
+
 [docs/GUIDE.md](docs/GUIDE.md) walks through one exam from the key to the Canvas
 import, with example output and what to do about each flag.
 
