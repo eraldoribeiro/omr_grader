@@ -145,8 +145,8 @@ grading, each sheet is graded with the key whose ID the student bubbled.
 
 - Put all sheets in one PDF, one sheet per page (several PDFs also work).
 - 200 to 300 dpi, grayscale or black and white.
-- Page order doesn't matter. Crooked and upside-down pages are straightened, but a
-  sideways page fails as `unreadable`, so rotate those in the scanner software.
+- Page order and orientation don't matter: crooked pages are straightened, and
+  upside-down and sideways (landscape) pages are turned upright.
 - The six black corner squares must be on the page, so don't crop the edges.
 - Scan the sheets as they are. Students who wrote their ID in the boxes without
   bubbling it are handled in step 6.
@@ -189,8 +189,8 @@ In the window: **Grade** tab, with the same exam folder at the top. Add `scans.p
 `key.csv` and `gradebook.csv`, pick "Exam 2" in the column dropdown (it lists the
 gradebook's assignments), and click "Grade". The results go to `exam2/graded`. The
 summary shows the mean, median and range, then the sheets to check and all sheets.
-Leave the "Corrections" box empty the first time; after checking the flagged sheets,
-add your corrections file there and grade again (section 7).
+Leave the "Corrections" box empty: after checking the flagged sheets, you can set
+answers and IDs by clicking in the Review tab (section 7).
 
 ## 5. Read the results
 
@@ -355,8 +355,24 @@ omr-grader scans.pdf --key key.csv --corrections corrections.csv \
 
 Each change is flagged in `results.csv` (`set by hand: Q5 C (read as blank)`) and marked
 `HAND` on `review.pdf`, and the scans stay as they are. Keep the file in the exam folder:
-every later grading run applies it again. In the window: the "Corrections" file in the
-Grade tab. `example/corrections.csv` has the three lines above, for the example sheets.
+every later grading run applies it again. `example/corrections.csv` has the three lines
+above, for the example sheets.
+
+In the window, the **Review** tab writes this file for you:
+
+1. Click "Load graded sheets". The Sheet list shows the sheets with flags (untick
+   "Only sheets with flags or corrections" to see all of them).
+2. For each sheet, click the bubble the student meant: a purple box marks it and the
+   Corrections table lists it. Click the question number, left of the A bubble, to clear
+   a stray mark. Clicking the same place again undoes it. The page can be enlarged with
+   the full-screen button above it.
+3. For an ID or a version, type it in the boxes on the right.
+4. Click "Save and grade again". This writes `corrections.csv` to the exam folder and
+   grades again with the files from the Grade tab; the corrected sheets then show `HAND`.
+   "Save corrections" only writes the file.
+
+The Grade tab applies the exam folder's `corrections.csv` whenever its own Corrections
+box is empty, and says so in its summary.
 
 **Light pencil marks on many sheets**: grade again with `--mark-threshold 0.28` (window:
 "More options"). Empty bubbles read about 0.02 and erased marks about 0.2, so stay above

@@ -140,7 +140,8 @@ Set "Exam folder" at the top to `exam2`. Then:
 
 See [Local window](#local-window) for details.
 
-- **Scans**: PDFs (one sheet per page) or images. Pages may be skewed or upside down.
+- **Scans**: PDFs (one sheet per page) or images. Pages may be skewed, upside down or
+  sideways (landscape pages are turned upright before grading).
 - **Key**: the exam's LaTeX file (below), a CSV with lines `version,answers`
   (e.g. `322,ABCDDCBA...`; the version `any` grades every sheet), or a filled key sheet
   scanned as PDF/image (one page per version; the Key bubbles give the version).
@@ -269,6 +270,12 @@ the window and on the command line.
   cancellations. After grading
   it shows a summary, the sheets to check and all sheets, with buttons that open
   `review.pdf` and the `graded` folder.
+- **Review** tab: after grading, shows the sheets with flags. Click the bubble the student
+  meant to set that answer, or the question number to clear a stray mark (click again to
+  undo), and type an ID or version for sheets that need one. "Save corrections" writes
+  `corrections.csv` in the exam folder, and the Grade tab applies that file whenever its
+  Corrections box is empty; "Save and grade again" does both, and the corrected answers
+  show up marked `HAND`.
 - **Prepare exam** tab: the key, key sheet and student sheet from the LaTeX or a CSV,
   with the key shown ten questions per line for checking.
 - "More options" holds the mark threshold, number of questions, ID digits and the
@@ -278,8 +285,8 @@ the window and on the command line.
 The page is served only to this computer (`127.0.0.1`), with no share link and Gradio's
 usage statistics off. Each run copies the uploads to a temporary folder deleted when the
 run ends. Gradio's own copies of uploads (in the system temporary folder) are deleted
-after 30 minutes while it runs, and all of them the next time the window starts. Results
-are written to the exam folder.
+after 4 hours while it runs (long enough to review and grade again in one sitting), and
+all of them the next time the window starts. Results are written to the exam folder.
 
 ## Digit reader
 
