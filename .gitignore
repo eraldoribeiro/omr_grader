@@ -1,0 +1,7 @@
+# Allow-list: only the code is tracked. Exams, scans, keys, results and
+# sample sheets stay local, including any new folders added later.
+/*
+!/.gitignore
+!/README.md
+!/omr_grader.py
+!/make_test_sheets.py
