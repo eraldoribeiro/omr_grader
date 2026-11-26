@@ -32,6 +32,12 @@ DARK = ("<script>const u = new URL(location.href);"
 TABLE_COLS = ["page", "student_id", "name", "version", "score", "total", "percent", "flags"]
 
 
+def exam_dir(text):
+    """The exam folder typed in the window (relative to where the window started)."""
+    d = Path(text.strip().strip("'\"") or ".").expanduser()
+    return d if d.is_absolute() else Path.cwd() / d
+
+
 def open_path(path):
     """Open a file or folder with the system viewer (Preview, Finder, ...)."""
     path = Path(path)
@@ -118,13 +124,11 @@ def summary(rows, log):
 
 
 def grade(scans, key_files, key_id, gradebook, assignment, cancel, canceled,
-          num_questions, threshold, id_digits, handwriting, out_dir):
+          num_questions, threshold, id_digits, handwriting, folder):
     scans, keys = files_of(scans), files_of(key_files)
     if not scans:
         raise gr.Error("Add the scanned sheets (PDFs or images).")
-    out = Path(out_dir.strip() or "graded").expanduser()
-    if not out.is_absolute():
-        out = Path.cwd() / out
+    out = exam_dir(folder) / "graded"
     with tempfile.TemporaryDirectory(prefix="omr_") as tmp:
         args = [str(p) for p in stage(scans, tmp)]
         args += key_args(keys, key_id, tmp)
@@ -145,20 +149,18 @@ def grade(scans, key_files, key_id, gradebook, assignment, cancel, canceled,
     log = f"$ {command}\n\n{log}"
     if not ok:
         return ("**The grader stopped with an error** (see the output below).",
-                None, None, log, str(out))
+                None, None, log)
     with open(out / "results.csv", newline="") as f:
         rows = list(csv.DictReader(f))
     cols = [c for c in TABLE_COLS if rows and c in rows[0]]
     table = [[r.get(c, "") for c in cols] for r in rows]
     flagged = [[r.get(c, "") for c in cols] for r in rows if r.get("flags")]
-    return (summary(rows, log), gr.update(value=table, headers=cols),
-            gr.update(value=flagged, headers=cols), log, str(out))
+    return (summary(rows, log) + f"\n\nResults are in `{out}`.",
+            gr.update(value=table, headers=cols), gr.update(value=flagged, headers=cols), log)
 
 
-def prepare(key_files, key_id, exam_name, course, cancel, out_dir, key_sheet, student_sheet):
-    out = Path(out_dir.strip() or "exam").expanduser()
-    if not out.is_absolute():
-        out = Path.cwd() / out
+def prepare(key_files, key_id, exam_name, course, cancel, folder, key_sheet, student_sheet):
+    out = exam_dir(folder)
     tex = any(Path(p).suffix.lower() == ".tex" for p in files_of(key_files))
     if tex and (key_sheet or student_sheet) and not key_id.strip():
         raise gr.Error("Enter the key ID: it is bubbled on the printed sheets.")
@@ -186,17 +188,21 @@ def prepare(key_files, key_id, exam_name, course, cancel, out_dir, key_sheet, st
                               f"{i + 1}-{min(i + 10, len(ans))}", " ".join(ans[i:i + 10])]
                              for i in range(0, len(ans), 10)]
                 key_rows.append(["", "", ""])
-    status = ("**Done.** The key below is what the grader will use (X = canceled), "
-              "ten questions per line." if ok else
+    status = (f"**Done.** Written to `{out}`. The key below is what the grader will use "
+              "(X = canceled), ten questions per line." if ok else
               "**The grader stopped with an error** (see the output below).")
-    return status, key_rows[:-1], log, str(out)
+    return status, key_rows[:-1], log
 
 
 def build():
     with gr.Blocks(title="Bubble-sheet grader", delete_cache=(1800, 1800)) as app:
         gr.Markdown("# Bubble-sheet grader\nRuns on this computer only. "
-                    "Uploaded files are deleted after each run; results go to the output folder. "
+                    "Uploaded files are deleted after each run. "
                     f"New to it? Read the [step-by-step guide]({GUIDE_URL}).")
+        exam = gr.Textbox(label="Exam folder", value=str(Path.cwd()),
+                          info="Prepare exam writes the key and sheets here; grading writes "
+                               "to its graded folder. In Finder, Option-Command-C copies a "
+                               "folder's path.")
         with gr.Tab("Grade"):
             with gr.Row():
                 with gr.Column():
@@ -218,7 +224,6 @@ def build():
                     canceled = gr.Radio([("Leave out of the total", "drop"),
                                          ("Give everyone the point", "credit")],
                                         value="drop", label="Canceled questions")
-                    out = gr.Textbox(label="Output folder", value=str(Path.cwd() / "graded"))
             with gr.Accordion("More options", open=False):
                 with gr.Row():
                     nq = gr.Number(label="Number of questions (empty: key length)",
@@ -234,7 +239,7 @@ def build():
             status = gr.Markdown()
             with gr.Row():
                 open_review = gr.Button("Open review.pdf")
-                open_folder = gr.Button("Open output folder")
+                open_folder = gr.Button("Open graded folder")
                 open_msg = gr.Markdown()
             gr.Markdown("### Sheets to check")
             flagged = gr.Dataframe(interactive=False, wrap=True)
@@ -242,14 +247,14 @@ def build():
             table = gr.Dataframe(interactive=False, wrap=True)
             with gr.Accordion("Grader output", open=False):
                 log = gr.Textbox(lines=14, show_label=False)
-            out_used = gr.State(str(Path.cwd() / "graded"))
 
             book.change(assignments, book, assignment)
             go.click(grade, [scans, keys, key_id, book, assignment, cancel, canceled, nq,
-                             thr, digits, hand, out],
-                     [status, table, flagged, log, out_used])
-            open_review.click(lambda d: open_path(Path(d) / "review.pdf"), out_used, open_msg)
-            open_folder.click(open_path, out_used, open_msg)
+                             thr, digits, hand, exam],
+                     [status, table, flagged, log])
+            open_review.click(lambda d: open_path(exam_dir(d) / "graded" / "review.pdf"),
+                              exam, open_msg)
+            open_folder.click(lambda d: open_path(exam_dir(d) / "graded"), exam, open_msg)
 
         with gr.Tab("Prepare exam"):
             gr.Markdown("Make the key from the exam LaTeX (or a CSV), and the sheets to print.")
@@ -266,22 +271,20 @@ def build():
                     p_course = gr.Textbox(label="Course", placeholder="CSE4001 Fall 2026")
                     p_key_sheet = gr.Checkbox(label="Key sheet (answers bubbled)", value=True)
                     p_student_sheet = gr.Checkbox(label="Student sheet to print", value=True)
-                    p_out = gr.Textbox(label="Output folder", value=str(Path.cwd() / "exam"))
             p_go = gr.Button("Make key and sheets", variant="primary")
             p_status = gr.Markdown()
             with gr.Row():
-                p_open = gr.Button("Open output folder")
+                p_open = gr.Button("Open exam folder")
                 p_msg = gr.Markdown()
             p_table = gr.Dataframe(headers=["version", "questions", "answers"],
                                    interactive=False)
             with gr.Accordion("Grader output", open=False):
                 p_log = gr.Textbox(lines=10, show_label=False)
-            p_used = gr.State(str(Path.cwd() / "exam"))
 
-            p_go.click(prepare, [p_keys, p_id, p_exam, p_course, p_cancel, p_out,
+            p_go.click(prepare, [p_keys, p_id, p_exam, p_course, p_cancel, exam,
                                  p_key_sheet, p_student_sheet],
-                       [p_status, p_table, p_log, p_used])
-            p_open.click(open_path, p_used, p_msg)
+                       [p_status, p_table, p_log])
+            p_open.click(lambda d: open_path(exam_dir(d)), exam, p_msg)
     return app
 
 

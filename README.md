@@ -44,10 +44,11 @@ python omr_grader.py --key exam2.tex --key-id 322 --exam-name "Exam 2" \
     --student-sheet exam2/student_sheet.pdf --out exam2
 
 # 2. After the exam: grade the scans and fill the Canvas gradebook column
-python omr_grader.py exam2/scans.pdf --key exam2/key.csv --out exam2/graded \
+python omr_grader.py exam2/scans.pdf --key exam2/key.csv \
     --canvas exam2/gradebook.csv --canvas-assignment "Exam 2"
 ```
 
+The results go to `exam2/graded`, next to the scans (`--out` picks another folder).
 Step 2 without `--canvas` just grades. Check the `flags` column of
 `exam2/graded/results.csv` and the flagged pages of `review.pdf`, then import
 `exam2/graded/canvas_import.csv` in Canvas (Grades > Import).
@@ -58,11 +59,14 @@ The same two steps in a browser form, without typing options:
 python gui.py
 ```
 
+Set "Exam folder" at the top to `exam2`. Then:
+
 1. **Prepare exam** tab: add the exam `.tex` (and its `.aux`), enter the key ID, exam
-   name and course, and click "Make key and sheets". Check the key it shows.
+   name and course, and click "Make key and sheets". The key and sheets are written to
+   the exam folder. Check the key it shows.
 2. **Grade** tab: add the scans, the key and the gradebook, pick the assignment column,
-   and click "Grade". Look over "Sheets to check" and "Open review.pdf", then import
-   `canvas_import.csv` from the output folder.
+   and click "Grade". The results go to `exam2/graded`. Look over "Sheets to check" and
+   "Open review.pdf", then import `canvas_import.csv` from that folder.
 
 See [Local window](#local-window) for details.
 
@@ -98,7 +102,7 @@ See [Local window](#local-window) for details.
   (except a `.tex` key given without a version, which grades every sheet).
 - The number of questions graded is the key length unless `--num-questions` is given.
 
-Outputs in `--out`:
+Outputs in `--out` (default: a `graded` folder next to the first scan):
 
 - `key.csv`: the key actually used, after cancellations.
 - `results.csv`: student ID, version, score, total, percent, the answers read (`-` blank,
@@ -122,7 +126,7 @@ Export the gradebook from Canvas (Grades > Export > CSV) and pass it with the as
 to fill:
 
 ```bash
-python omr_grader.py scans.pdf --key exam2/key.csv --out exam2/graded \
+python omr_grader.py exam2/scans.pdf --key exam2/key.csv \
     --canvas exam2/gradebook.csv --canvas-assignment "Exam 2"
 ```
 
@@ -174,15 +178,18 @@ opens in your browser, in Gradio's dark theme:
 omr-grader-gui
 ```
 
-Output folders default to the folder it was started from. The header links to
+The "Exam folder" at the top applies to both tabs: Prepare exam writes the key and
+sheets into it, and grading writes to its `graded` folder. It starts as the folder the
+window was started from (in Finder, Option-Command-C copies a folder's path to paste
+in). The header links to
 [docs/GUIDE.md](docs/GUIDE.md), which shows each step both in the window and on the
 command line.
 
 - **Grade** tab: add the scans and the key (the exam `.tex`, with its `.aux` for the
   question-count check, a key CSV or a scanned key sheet), optionally the Canvas
-  gradebook (its assignment columns fill the dropdown), cancellations and the output
-  folder. After grading it shows a summary, the sheets to check and all sheets, with
-  buttons that open `review.pdf` and the output folder.
+  gradebook (its assignment columns fill the dropdown) and cancellations. After grading
+  it shows a summary, the sheets to check and all sheets, with buttons that open
+  `review.pdf` and the `graded` folder.
 - **Prepare exam** tab: the key, key sheet and student sheet from the LaTeX or a CSV,
   with the key shown ten questions per line for checking.
 - "More options" holds the mark threshold, number of questions, ID digits and the
@@ -192,7 +199,7 @@ command line.
 The page is served only to this computer (`127.0.0.1`), with no share link and Gradio's
 usage statistics off. Each run copies the uploads to a temporary folder deleted when the
 run ends; Gradio's own copies of uploads (in the system temporary folder) are deleted after
-30 minutes while it runs, and all of them the next time the window starts. Results are written to the output folder you choose.
+30 minutes while it runs, and all of them the next time the window starts. Results are written to the exam folder.
 
 ## Digit reader
 
@@ -249,7 +256,7 @@ Without a template it uses the blank `Sheet100QA4.pdf` in `omrgrader/`.
 
 ```bash
 python make_test_sheets.py test
-python omr_grader.py test/students.pdf --key test/keys.csv --out test/graded
+python omr_grader.py test/students.pdf --key test/keys.csv
 ```
 
 `test/graded/results.csv` should match `test/truth.csv`.

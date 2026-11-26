@@ -86,9 +86,11 @@ Warnings to look for in the output:
 - A question with no correct choice, or more than one, is canceled with a warning and
   shows as `canceled [n]`.
 
-In the window: **Prepare exam** tab. Add `exam2.tex` and `exam2.aux`, type the key ID,
-exam name and course, keep both sheet boxes ticked, and click "Make key and sheets".
-The key appears ten questions per line for checking.
+In the window: set "Exam folder" at the top to the `exam2` folder (in Finder,
+Option-Command-C copies a folder's path). Then, in the **Prepare exam** tab, add
+`exam2.tex` and `exam2.aux`, type the key ID, exam name and course, keep both sheet
+boxes ticked, and click "Make key and sheets". The key and sheets are written to the
+exam folder, and the key appears ten questions per line for checking.
 
 ### Several versions
 
@@ -128,11 +130,12 @@ grading, each sheet is graded with the key whose ID the student bubbled.
 ## 4. Grade
 
 ```bash
-omr-grader scans.pdf --key key.csv --out graded \
+omr-grader scans.pdf --key key.csv \
     --canvas gradebook.csv --canvas-assignment "Exam 2"
 ```
 
-Leave out the last line to grade without the gradebook. The output (from the test sheets
+The results go to a `graded` folder next to the scans, here `exam2/graded`; `--out`
+picks another folder. Leave out the last line to grade without the gradebook. The output (from the test sheets
 in section 9):
 
 ```text
@@ -159,14 +162,14 @@ Read the first lines before anything else:
   digits. Their sheets are never matched automatically; enter those grades by hand.
 - The key lines say how many questions are graded and which are canceled.
 
-In the window: **Grade** tab. Add `scans.pdf`, `key.csv` and `gradebook.csv`, pick
-"Exam 2" in the column dropdown (it lists the gradebook's assignments), set the output
-folder, and click "Grade". The summary shows the mean, median and range, then the
-sheets to check and all sheets.
+In the window: **Grade** tab, with the same exam folder at the top. Add `scans.pdf`,
+`key.csv` and `gradebook.csv`, pick "Exam 2" in the column dropdown (it lists the
+gradebook's assignments), and click "Grade". The results go to `exam2/graded`. The
+summary shows the mean, median and range, then the sheets to check and all sheets.
 
 ## 5. Read the results
 
-Everything is written to the output folder (`graded/`).
+Everything is written to `graded/` in the exam folder.
 
 ### results.csv
 
@@ -270,13 +273,13 @@ Version and page:
 ## 7. Fix and grade again
 
 Grading takes a few seconds, and running the same command again replaces everything in
-the output folder. So the usual way to fix something is to change the input and grade
+`graded/`. So the usual way to fix something is to change the input and grade
 again, not to edit the results.
 
 **Cancel a question** (after the item analysis, or a mistake found in class):
 
 ```bash
-omr-grader scans.pdf --key key.csv --out graded \
+omr-grader scans.pdf --key key.csv \
     --canvas gradebook.csv --canvas-assignment "Exam 2" \
     --cancel 12 --canceled credit
 ```
@@ -305,6 +308,9 @@ any,BCADCCCCADBBCBXC...
 omr-grader late_sheet.pdf --key key_any.csv --out graded_late
 ```
 
+Give it its own `--out`: by default it would write to `graded/` and replace the results
+of the other sheets.
+
 (A `.tex` key given without a key ID does the same.) When everyone took the same version,
 grade all the sheets this way.
 
@@ -331,7 +337,7 @@ step before the real exam. From a clone of the repository:
 
 ```bash
 python make_test_sheets.py test
-omr-grader test/students.pdf --key test/keys.csv --out test/graded
+omr-grader test/students.pdf --key test/keys.csv
 ```
 
 `test/truth.csv` holds the answers and scores that were drawn on the sheets;

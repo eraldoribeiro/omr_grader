@@ -10,8 +10,8 @@ SCANS are PDFs (one sheet per page) or image files. KEY is either
     as 322=exam.tex to tie it to a version; without one it grades every sheet.
 Repeat --key for several versions.
 
-Outputs in DIR (default ./graded): key.csv, results.csv, item_analysis.csv,
-review.pdf. With no SCANS, only key.csv is written.
+Outputs in DIR (default: graded/ next to the first scan): key.csv, results.csv,
+item_analysis.csv, review.pdf. With no SCANS, only key.csv is written (default ./graded).
 """
 
 import argparse
@@ -534,7 +534,8 @@ def main(argv=None):
                     help="key CSV, filled key sheet, or exam LaTeX file; "
                          "prefix a .tex with its version, e.g. 322=exam.tex, "
                          "and repeat --key for several versions")
-    ap.add_argument("--out", default="graded", help="output directory")
+    ap.add_argument("--out", help="output directory (default: a graded folder next to "
+                                      "the first scan; with no scans, ./graded)")
     ap.add_argument("--num-questions", type=int,
                     help="number of questions (default: length of the key); "
                          "questions past the end of a key are canceled")
@@ -620,7 +621,10 @@ def main(argv=None):
         canceled = [i + 1 for i, a in enumerate(k) if a == CANCELED]
         print(f"  key {v}: canceled {canceled if canceled else 'none'}")
 
-    out = Path(args.out)
+    if args.out:
+        out = Path(args.out)
+    else:  # results go with the exam: exam2/scans.pdf -> exam2/graded
+        out = Path(args.scans[0]).parent / "graded" if args.scans else Path("graded")
     out.mkdir(parents=True, exist_ok=True)
     with open(out / "key.csv", "w") as f:  # the key actually used, for the record
         f.write("version,answers\n")
