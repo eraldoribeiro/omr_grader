@@ -21,7 +21,19 @@ Step 2 without `--canvas` just grades. Check the `flags` column of
 `exam2/graded/results.csv` and the flagged pages of `review.pdf`, then import
 `exam2/graded/canvas_import.csv` in Canvas (Grades > Import).
 
-To use a form in the browser instead of the command line, see [Local window](#local-window).
+The same two steps in a browser form, without typing options:
+
+```bash
+python gui.py
+```
+
+1. **Prepare exam** tab: add the exam `.tex` (and its `.aux`), enter the key ID, exam
+   name and course, and click "Make key and sheets". Check the key it shows.
+2. **Grade** tab: add the scans, the key and the gradebook, pick the assignment column,
+   and click "Grade". Look over "Sheets to check" and "Open review.pdf", then import
+   `canvas_import.csv` from the output folder.
+
+See [Local window](#local-window) for details.
 
 - **Scans**: PDFs (one sheet per page) or images. Pages may be skewed or upside down.
 - **Key**: the exam's LaTeX file (below), a CSV with lines `version,answers`
