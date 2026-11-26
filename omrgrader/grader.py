@@ -120,7 +120,13 @@ def find_squares(img):
 
 
 def align(img):
-    """Warp a scan onto the template frame. Returns the warped image."""
+    """Warp a scan onto the template frame. Returns the warped image.
+
+    A page wider than it is tall was scanned sideways (the sheet is portrait): it is
+    turned a quarter turn first, and the upside-down check below settles which way.
+    """
+    if img.shape[1] > img.shape[0]:
+        img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
     pts = find_squares(img)
     if len(pts) < 4:
         raise RuntimeError(f"found only {len(pts)} alignment squares")
