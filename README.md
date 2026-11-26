@@ -174,7 +174,9 @@ opens in your browser, in Gradio's dark theme:
 omr-grader-gui
 ```
 
-Output folders default to the folder it was started from.
+Output folders default to the folder it was started from. The header links to
+[docs/GUIDE.md](docs/GUIDE.md), which shows each step both in the window and on the
+command line.
 
 - **Grade** tab: add the scans and the key (the exam `.tex`, with its `.aux` for the
   question-count check, a key CSV or a scanned key sheet), optionally the Canvas
