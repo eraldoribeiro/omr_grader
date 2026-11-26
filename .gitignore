@@ -3,6 +3,7 @@
 /*
 !/.gitignore
 !/README.md
+!/LICENSE
 !/pyproject.toml
 !/omr_grader.py
 !/gui.py

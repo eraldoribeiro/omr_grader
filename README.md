@@ -293,3 +293,15 @@ versions and also writes `keys.csv` and a filled key sheet (`--key key_sheet.pdf
 python make_test_sheets.py test
 python omr_grader.py test/students.pdf --key test/keys.csv
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE). The license covers this repository's code, docs, template
+and model weights. The packages the grader installs have their own licenses: NumPy
+(BSD), OpenCV (Apache 2.0), Gradio (Apache 2.0) and PyMuPDF (AGPL-3.0, or a commercial
+license from Artifex). Using them as installed dependencies is fine; anyone who
+distributes the grader bundled together with PyMuPDF, for example as a standalone app,
+has to follow the AGPL for that bundle.
+
+The digit reader's weights (`omrgrader/digits_model.npz`) were trained on the MNIST
+handwritten digits, which are distributed under CC BY-SA 3.0.
