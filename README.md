@@ -54,12 +54,32 @@ To update, run step 2 again with `--reinstall` after `install`. To remove it:
 
 ### With pip (if you already use Python, e.g. Anaconda)
 
-```bash
-pip install git+https://github.com/eraldoribeiro/omr_grader.git
-```
+Install it in its own environment. Installing into Anaconda's `base` adds Gradio and
+several dozen packages it needs, and can upgrade packages other projects rely on. With
+conda:
 
-This adds the same two commands. To update, add `--force-reinstall --no-deps`; to remove
-it, `pip uninstall omr-grader`.
+1. Create the environment (once):
+
+   ```bash
+   conda create -n omr python=3.12
+   ```
+
+2. Activate it:
+
+   ```bash
+   conda activate omr
+   ```
+
+3. Install the grader into it:
+
+   ```bash
+   pip install git+https://github.com/eraldoribeiro/omr_grader.git
+   ```
+
+This adds the same two commands, available while the environment is active: run
+`conda activate omr` in each new terminal before using them. To update, run step 3 again
+with `--force-reinstall --no-deps` after `install`. To remove it, delete the environment:
+`conda remove -n omr --all`.
 
 ### From a clone (to try the example exam or change the code)
 
