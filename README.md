@@ -296,6 +296,76 @@ run ends. Gradio's own copies of uploads (in the system temporary folder) are de
 after 4 hours while it runs (long enough to review and grade again in one sitting), and
 all of them the next time the window starts. Results are written to the exam folder.
 
+## Local assistant (MCP)
+
+`omr-grader-mcp` lets an assistant app running a model on your own computer, such as
+LM Studio, run the grader when you ask in plain language ("grade exam2 with the
+gradebook and list the sheets to check"). It is an MCP server: it gives the assistant
+a fixed set of tools that run the same grader as the command line, so the assistant
+cannot run anything else.
+
+| Tool | What it does |
+| --- | --- |
+| `list_exam_files` | What an exam folder holds: scans, key, gradebook, corrections, results |
+| `prepare_exam` | Key, key sheet and student sheet from the exam `.tex` |
+| `grade_exam` | Grade the folder's scans (with the gradebook if asked); applies `corrections.csv` |
+| `show_flagged`, `show_results` | The flagged sheets; one student's or every sheet's result |
+| `hardest_questions` | The questions the fewest students got right |
+| `set_correction`, `show_corrections` | Add or remove a line of `corrections.csv`; list them |
+| `open_review` | Open `review.pdf` in the PDF viewer |
+
+The tools can write `key.csv`, the printable sheets, `graded/` and `corrections.csv` in
+an exam folder, and nothing else. Each grading answer includes the command that was run.
+
+**Use a model that runs on your computer.** With a gradebook, the results include
+student names and SIS IDs, and the assistant reads them. With a local model they stay
+on your computer; connecting this server to a cloud assistant would send them to its
+provider, which FERPA rules may not allow.
+
+To set it up with [LM Studio](https://lmstudio.ai):
+
+1. Install the grader with the `mcp` extra, for example into the conda environment
+   from [Install](#install):
+
+   ```bash
+   pip install "omr-grader[mcp] @ git+https://github.com/eraldoribeiro/omr_grader.git"
+   ```
+
+   With uv: `uv tool install "omr-grader[mcp] @ git+https://github.com/eraldoribeiro/omr_grader.git"`.
+
+2. Find the full path of the command (with the environment active):
+
+   ```bash
+   which omr-grader-mcp
+   ```
+
+3. In LM Studio, download a model that handles tool calls well (Qwen3 30B-A3B or
+   gpt-oss 20B ran comfortably on a 36 GB M3), open the MCP settings ("Edit
+   mcp.json") and add the server, with that path and the folder that holds your exam
+   folders:
+
+   ```json
+   {
+     "mcpServers": {
+       "omr-grader": {
+         "command": "/opt/anaconda3/envs/omr/bin/omr-grader-mcp",
+         "env": { "OMR_EXAMS_DIR": "/Users/you/Documents/exams" }
+       }
+     }
+   }
+   ```
+
+4. Enable the server in the chat and ask, for example:
+   - "What's in exam2?"
+   - "Grade exam2 with the gradebook, assignment Exam 2, and tell me which sheets need
+     checking."
+   - "Sheet students.pdf#p7 question 12 should be B. Grade again."
+   - "Which questions did students miss most?"
+
+Folder names in requests are relative to `OMR_EXAMS_DIR`. Local models are less
+reliable than the command line: check the command each answer reports, and look at
+flagged sheets in `review.pdf` (or the window's Review tab) yourself.
+
 ## Digit reader
 
 `omrgrader/handwriting.py` reads the ID boxes with a small CNN (two convolution layers
@@ -376,10 +446,10 @@ python omr_grader.py test/students.pdf --key test/keys.csv
 
 MIT, see [LICENSE](LICENSE). The license covers this repository's code, docs, template
 and model weights. The packages the grader installs have their own licenses: NumPy
-(BSD), OpenCV (Apache 2.0), Gradio (Apache 2.0) and PyMuPDF (AGPL-3.0, or a commercial
-license from Artifex). Using them as installed dependencies is fine; anyone who
-distributes the grader bundled together with PyMuPDF, for example as a standalone app,
-has to follow the AGPL for that bundle.
+(BSD), OpenCV (Apache 2.0), Gradio (Apache 2.0), the MCP Python SDK (MIT, only with the
+`mcp` extra) and PyMuPDF (AGPL-3.0, or a commercial license from Artifex). Using them as
+installed dependencies is fine; anyone who distributes the grader bundled together with
+PyMuPDF, for example as a standalone app, has to follow the AGPL for that bundle.
 
 The digit reader's weights (`omrgrader/digits_model.npz`) were trained on the MNIST
 handwritten digits, which are distributed under CC BY-SA 3.0.
