@@ -1,6 +1,6 @@
 # omr_grader
 
-Grades scanned 100-question bubble sheets (`Sheet100QA4.pdf` layout).
+Grades scanned 100-question bubble sheets (the `Sheet100QA4.pdf` layout in this repo).
 
 Requires `opencv-python`, `numpy`, `pymupdf`.
 
@@ -50,5 +50,18 @@ so going below about 0.22 risks counting an erased-and-left-empty question as an
 A question read as blank whose darkest bubble is still above half the threshold is
 flagged `faint mark, check` so you can look at it in `review.pdf`.
 
-`make_test_sheets.py TEMPLATE.pdf OUTDIR` builds synthetic filled sheets with known answers
-for testing.
+## Testing
+
+`make_test_sheets.py TEMPLATE.pdf OUTDIR` makes 6 synthetic student sheets with known
+answers (two versions, 40 questions), a filled key sheet, `keys.csv` and `truth.csv`.
+The pages are skewed and noisy, and include a blank (sheet 2, Q5), a double mark
+(sheet 3, Q7), an erased-and-changed answer (sheet 4, Q9) and an upside-down page (5).
+The blank template, `Sheet100QA4.pdf`, is in the repo.
+
+```bash
+python make_test_sheets.py Sheet100QA4.pdf test
+python omr_grader.py test/students.pdf --key test/keys.csv --id-digits 6 --out test/graded
+```
+
+`test/graded/results.csv` should match `test/truth.csv`. The test sheets fill all six ID
+columns, hence `--id-digits 6`.
