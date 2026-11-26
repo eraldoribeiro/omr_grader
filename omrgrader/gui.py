@@ -22,6 +22,7 @@ from pathlib import Path
 os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
 import gradio as gr  # noqa: E402
 
+GUIDE_URL = "https://github.com/eraldoribeiro/omr_grader/blob/main/docs/GUIDE.md"
 PKG_PARENT = Path(__file__).resolve().parent.parent   # so "-m omrgrader.grader" works
 # Force Gradio's dark theme whatever the browser or system setting: Gradio uses
 # the dark theme when the address has ?__theme=dark, so add it on load.
@@ -194,7 +195,8 @@ def prepare(key_files, key_id, exam_name, course, cancel, out_dir, key_sheet, st
 def build():
     with gr.Blocks(title="Bubble-sheet grader", delete_cache=(1800, 1800)) as app:
         gr.Markdown("# Bubble-sheet grader\nRuns on this computer only. "
-                    "Uploaded files are deleted after each run; results go to the output folder.")
+                    "Uploaded files are deleted after each run; results go to the output folder. "
+                    f"New to it? Read the [step-by-step guide]({GUIDE_URL}).")
         with gr.Tab("Grade"):
             with gr.Row():
                 with gr.Column():
