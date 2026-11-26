@@ -3,11 +3,11 @@
 /*
 !/.gitignore
 !/README.md
+!/pyproject.toml
 !/omr_grader.py
-!/make_test_sheets.py
-!/Sheet100QA4.pdf
-!/handwriting.py
-!/train_digits.py
-!/digits_model.npz
-!/canvas.py
 !/gui.py
+!/make_test_sheets.py
+!/train_digits.py
+!/omrgrader/
+__pycache__/
+*.egg-info/

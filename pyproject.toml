@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omr-grader"
+version = "1.0.0"
+description = "Grade scanned 100-question bubble sheets, with Canvas gradebook import"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.22",
+    "opencv-python>=4.5",
+    "pymupdf>=1.23",
+    "gradio>=5",
+]
+
+[project.scripts]
+omr-grader = "omrgrader.grader:main"
+omr-grader-gui = "omrgrader.gui:main"
+
+[tool.setuptools]
+packages = ["omrgrader"]
+
+[tool.setuptools.package-data]
+omrgrader = ["Sheet100QA4.pdf", "digits_model.npz"]

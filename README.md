@@ -2,7 +2,35 @@
 
 Grades scanned 100-question bubble sheets (the `Sheet100QA4.pdf` layout in this repo).
 
-Requires `opencv-python`, `numpy`, `pymupdf`.
+## Install
+
+With [uv](https://docs.astral.sh/uv/), which also installs Python if needed:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+```bash
+uv tool install git+https://github.com/eraldoribeiro/omr_grader.git
+```
+
+Or with pip into a Python you already have (e.g. Anaconda):
+
+```bash
+pip install git+https://github.com/eraldoribeiro/omr_grader.git
+```
+
+This adds two commands: `omr-grader` (the command line below) and `omr-grader-gui`
+(the browser window). To update, run the install again with `--reinstall` (uv) or
+`--force-reinstall --no-deps` (pip). The repository is private, so installing needs
+access to it on GitHub and git signed in (SSH, or `gh auth login`).
+
+From a clone of the repository, `python omr_grader.py` and `python gui.py` do the same
+as the two commands; they need `opencv-python`, `numpy`, `pymupdf` and, for the window,
+`gradio`. The examples below use `python omr_grader.py`; with an installed copy type
+`omr-grader` instead.
+
+## Workflow
 
 Typical use for one exam:
 
@@ -129,18 +157,21 @@ python omr_grader.py --key exam.tex --key-id 322 --exam-name "Exam 2" \
 - `--key-id` is the 3-digit ID bubbled in the Key field. A `.tex` key needs it (or
   `322=exam.tex`); CSV and scanned keys carry their own. Several versions give one page
   each.
-- `--template` picks a different blank sheet; the default is `Sheet100QA4.pdf` here.
+- `--template` picks a different blank sheet; the default is the `Sheet100QA4.pdf`
+  that comes with the grader (`omrgrader/` in the repo).
 
 Without scans, only these files and `key.csv` are written.
 
 ## Local window
 
-`gui.py` puts the same steps in a form that opens in your browser. It needs Gradio as
-well (`pip install gradio`, already in a standard Anaconda `base`):
+`omr-grader-gui` (or `python gui.py` in a clone) puts the same steps in a form that
+opens in your browser, in Gradio's dark theme:
 
 ```bash
-python gui.py
+omr-grader-gui
 ```
+
+Output folders default to the folder it was started from.
 
 - **Grade** tab: add the scans and the key (the exam `.tex`, with its `.aux` for the
   question-count check, a key CSV or a scanned key sheet), optionally the Canvas
@@ -156,11 +187,11 @@ python gui.py
 The page is served only to this computer (`127.0.0.1`), with no share link and Gradio's
 usage statistics off. Each run copies the uploads to a temporary folder deleted when the
 run ends; Gradio's own copies of uploads (in the system temporary folder) are deleted after
-30 minutes while it runs, and all of them the next time `gui.py` starts. Results are written to the output folder you choose.
+30 minutes while it runs, and all of them the next time the window starts. Results are written to the output folder you choose.
 
 ## Digit reader
 
-`handwriting.py` reads the ID boxes with a small CNN (two convolution layers and two
+`omrgrader/handwriting.py` reads the ID boxes with a small CNN (two convolution layers and two
 fully connected layers). PyTorch is used only to train it; the trained weights are saved
 in `digits_model.npz` (about 200 KB), and the grader runs the network in NumPy: the
 convolutions, max-pooling, matrix products and softmax take about fifteen lines. On the
@@ -177,7 +208,7 @@ Running the network in NumPy keeps grading free of a deep-learning library:
 
 So grading needs only the three packages above, plus the weights file in this repo.
 
-The network itself is written out in `handwriting.py`; the weights file holds only the
+The network itself is written out in `omrgrader/handwriting.py`; the weights file holds only the
 learned numbers:
 
 - `_conv`: a convolution layer (each 3x3 filter slid over the image with NumPy's
@@ -205,14 +236,14 @@ digits too big or off-center) and runs them through the same clean-up as real bo
 
 ## Testing
 
-`make_test_sheets.py TEMPLATE.pdf OUTDIR` makes 6 synthetic student sheets with known
+`make_test_sheets.py [TEMPLATE.pdf] OUTDIR` makes 6 synthetic student sheets with known
 answers (two versions, 40 questions), a filled key sheet, `keys.csv` and `truth.csv`.
 The pages are skewed and noisy, and include a blank (sheet 2, Q5), a double mark
 (sheet 3, Q7), an erased-and-changed answer (sheet 4, Q9) and an upside-down page (5).
-The blank template, `Sheet100QA4.pdf`, is in the repo.
+Without a template it uses the blank `Sheet100QA4.pdf` in `omrgrader/`.
 
 ```bash
-python make_test_sheets.py Sheet100QA4.pdf test
+python make_test_sheets.py test
 python omr_grader.py test/students.pdf --key test/keys.csv --out test/graded
 ```
 

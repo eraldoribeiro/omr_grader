@@ -3,7 +3,7 @@
 Needs only NumPy and OpenCV. The network is trained by train_digits.py, which
 saves its weights to digits_model.npz; inference here is plain NumPy.
 
-Geometry is in template pixels at 200 dpi, the same frame as omr_grader.py.
+Geometry is in template pixels at 200 dpi, the same frame as grader.py.
 """
 
 from pathlib import Path

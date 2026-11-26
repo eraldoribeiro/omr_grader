@@ -1,6 +1,6 @@
 """Make synthetic filled sheets for testing omr_grader.py.
 
-python make_test_sheets.py TEMPLATE.pdf OUTDIR
+python make_test_sheets.py [TEMPLATE.pdf] OUTDIR   (default: the grader's template)
 Writes OUTDIR/students.pdf, OUTDIR/key_sheet.pdf, OUTDIR/keys.csv, OUTDIR/truth.csv.
 """
 
@@ -12,7 +12,7 @@ import cv2
 import fitz
 import numpy as np
 
-import omr_grader as g
+from omrgrader import grader as g
 
 RNG = np.random.default_rng(0)
 S = 1.5  # draw at 300 dpi (template coords are 200 dpi)
@@ -129,4 +129,8 @@ def main(template, outdir):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    # make_test_sheets.py OUTDIR, or make_test_sheets.py TEMPLATE.pdf OUTDIR
+    args = sys.argv[1:]
+    if len(args) == 1:
+        args = [g.DEFAULT_TEMPLATE] + args
+    main(*args)

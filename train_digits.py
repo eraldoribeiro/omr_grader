@@ -6,7 +6,7 @@ MNIST_RAW_DIR holds the four MNIST idx files (train/t10k images and labels,
 optionally .gz). Each digit is pasted into a simulated scanned ID box and run
 through the same clean-up the grader applies to real boxes, so the network
 trains on what it will see. Needs PyTorch (training only); the weights are
-saved to digits_model.npz for the NumPy reader in handwriting.py.
+saved to digits_model.npz for the NumPy reader in omrgrader/handwriting.py.
 """
 
 import argparse
@@ -17,7 +17,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-import handwriting as hw
+from omrgrader import handwriting as hw
 
 
 def read_idx(path):
@@ -95,7 +95,7 @@ def main():
               f"accuracy {100 * ok[m].mean():.2f}%")
 
     sd = {k: v.detach().cpu().numpy() for k, v in model.state_dict().items()}
-    out = Path(__file__).resolve().parent / "digits_model.npz"
+    out = hw.MODEL_PATH
     np.savez_compressed(out, c1w=sd["0.weight"], c1b=sd["0.bias"], c2w=sd["3.weight"],
                         c2b=sd["3.bias"], f1w=sd["7.weight"], f1b=sd["7.bias"],
                         f2w=sd["10.weight"], f2b=sd["10.bias"])
