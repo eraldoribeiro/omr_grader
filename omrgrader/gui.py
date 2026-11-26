@@ -247,8 +247,7 @@ def review_load(folder, flagged_only, fixes=None):
             msg or f"{len(pages)} sheets graded; {len(choices)} listed.")
 
 
-def fix_count(fix):
-    return len(fix["answers"]) + bool(fix["id"]) + bool(fix["version"])
+fix_count = g.fix_count
 
 
 def page_title(pg):
@@ -496,8 +495,10 @@ def build():
                 inputs[5] = None
                 status, tbl, flg, lg = grade(*inputs, folder)
                 dd, pages, n, _, _ = review_load(folder, flagged_only, fixes)
-                dd["value"] = label   # stay on the same sheet
+                dd["value"] = label   # stay on the same sheet, showing the new page
+                img, id_value, version_value, info = review_show(label, pages, fixes, folder)
                 return (status, tbl, flg, lg, dd, pages, n, fixes, corrections_table(fixes),
+                        img, id_value, version_value, info,
                         msg + " Graded again; the Grade tab has the new results.")
 
             r_load.click(load, [exam, r_flagged],
@@ -520,7 +521,7 @@ def build():
                  key_id,
                  book, assignment, corrections, cancel, canceled, nq, thr, digits, hand],
                 [status, table, flagged, log, r_page, r_pages, r_n, r_fixes, r_table,
-                 r_msg])
+                 r_img, r_id, r_version, r_info, r_msg])
 
         with gr.Tab("Prepare exam"):
             gr.Markdown("Make the key from the exam LaTeX (or a CSV), and the sheets to print.")

@@ -411,6 +411,11 @@ def load_corrections(path, num_questions, id_digits):
     return fixes
 
 
+def fix_count(fix):
+    """Number of corrections for one page."""
+    return len(fix["answers"]) + bool(fix["id"]) + bool(fix["version"])
+
+
 def annotate(warped, answers, key, correct, header, by_hand=()):
     out = cv2.cvtColor(warped, cv2.COLOR_GRAY2BGR)
     green, red, orange, blue = (0, 170, 0), (0, 0, 220), (0, 140, 255), (200, 80, 0)
@@ -441,7 +446,11 @@ def annotate(warped, answers, key, correct, header, by_hand=()):
         if a in CHOICES:
             x, y = question_center(q, CHOICES.index(a))
             cv2.rectangle(out, (int(x) - 22, int(y) - 22), (int(x) + 22, int(y) + 22), purple, 2)
-    cv2.putText(out, header, (60, 2290), cv2.FONT_HERSHEY_SIMPLEX, 1.1, blue, 3)
+    if isinstance(header, str):
+        cv2.putText(out, header, (60, 2290), cv2.FONT_HERSHEY_SIMPLEX, 1.1, blue, 3)
+    else:   # corrected sheet: what was read, then the corrected result
+        cv2.putText(out, header[0], (60, 2252), cv2.FONT_HERSHEY_SIMPLEX, 1.0, blue, 3)
+        cv2.putText(out, header[1], (60, 2302), cv2.FONT_HERSHEY_SIMPLEX, 1.0, purple, 3)
     return out
 
 
@@ -733,6 +742,7 @@ def main(argv=None):
             fix = corrections.get(label)
             if fix:
                 used.add(label)
+            read_id, read_version = sheet["student_id"], sheet["version"]   # before fixes
             fixed_id = fix["id"] if fix else None
             if fixed_id:
                 flags.append(f"ID set by hand: {fixed_id} (read as {sheet['student_id']})")
@@ -819,6 +829,17 @@ def main(argv=None):
             who = f"  {student['Student']}" if student else ""
             header = f"ID {sheet['student_id']}{who}  v{version}  {score}/{total}{pct}"
             print(f"{label}: {header}" + (f"  [{'; '.join(flags)}]" if flags else ""))
+            if fix:   # review.pdf shows the sheet as read, then as corrected
+                n_fix = fix_count(fix)
+                kr = (read_version if read_version in keys else ANY if ANY in keys else
+                      next(iter(keys)) if len(keys) == 1 and "?" in read_version else None)
+                if kr is None:
+                    as_read = f"As read: ID {read_id}  v{read_version}  (no key, not graded)"
+                else:
+                    _, s0, t0 = grade(sheet["answers"], keys[kr], args.canceled)
+                    p0 = f"  {100 * s0 / t0:.1f}%" if t0 else ""
+                    as_read = f"As read: ID {read_id}  v{read_version}  {s0}/{t0}{p0}"
+                header = [as_read, f"Corrected: {header}  ({n_fix} set by hand)"]
 
             img_out = annotate(sheet["warped"], answers, key, correct, header, by_hand)
             if show_boxes:

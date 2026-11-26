@@ -177,7 +177,8 @@ See [Local window](#local-window) for details.
   sets Q5 to C, `-` clears a stray mark, `scans.pdf#p6,id,3041` sets the ID (the full SIS
   User ID tells apart two students who share the last digits), and
   `scans.pdf#p6,version,322` sets the version. The scans are not changed; each correction
-  is flagged in `results.csv` and marked `HAND` on `review.pdf`.
+  is flagged in `results.csv` and marked `HAND` on `review.pdf`, where the sheet's score
+  line becomes two: as read, and corrected.
 - The 3-digit Key field on each student sheet selects which answer key grades it
   (except a `.tex` key given without a version, which grades every sheet).
 - The number of questions graded is the key length unless `--num-questions` is given.

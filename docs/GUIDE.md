@@ -227,7 +227,10 @@ One page per sheet, straightened, in the same order as `results.csv`:
 - A line through a question: canceled (Q15 here).
 - `HAND` in purple, with a box around the answer: an answer set from the corrections
   file (section 7).
-- At the bottom of the page: ID, name, version and score, as in the console output.
+- At the bottom of the page: ID, name, version and score, as in the console output. On
+  a sheet with corrections there are two lines: "As read" (blue) with the ID, version
+  and score the grader read, and "Corrected" (purple) with the result after the
+  corrections file and how many items were set by hand.
 - When the ID came from handwriting or the gradebook had to repair it, the enlarged ID
   boxes are pasted at the bottom so you can read them yourself.
 
