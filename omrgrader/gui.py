@@ -492,7 +492,10 @@ def key_load(folder, key_id):
     if it is there, else the first one)."""
     path = exam_dir(folder) / "key.csv"
     if not path.exists():
-        raise gr.Error(f"No key.csv in {path.parent} yet.")
+        here = sorted(p.parent.name for p in path.parent.glob("*/key.csv"))
+        hint = (f" Subfolders with a key.csv: {', '.join(here)}." if here else "")
+        raise gr.Error(f"No key.csv in {path.parent}. Set \"Exam folder\" at the top to "
+                       f"the exam's folder (for example exam2).{hint}")
     keys = g.load_keys(str(path))
     version = key_id if key_id in keys else next(iter(keys))
     ans = keys[version]
