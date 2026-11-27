@@ -130,7 +130,7 @@ Step 2 without `--canvas` only grades. Check the `flags` column of
 `exam2/graded/results.csv` and the flagged pages of `review.pdf`, then import
 `exam2/graded/canvas_import.csv` in Canvas (Grades > Import).
 
-The same two steps in a browser form, without typing options:
+The same steps in a browser form, without typing options:
 
 ```bash
 python gui.py
@@ -142,8 +142,10 @@ Set "Exam folder" at the top to `exam2`. Then:
    name and course, and click "Make key and sheets". The key and sheets are written to
    the exam folder. Check the key it shows.
 2. **Grade** tab: add the scans, the key and the gradebook, pick the assignment column,
-   and click "Grade". The results go to `exam2/graded`. Look over "Sheets to check" and
-   "Open review.pdf", then import `canvas_import.csv` from that folder.
+   and click "Grade". The results go to `exam2/graded`.
+3. **Review** tab: go through the flagged sheets, click the bubbles the grader missed,
+   and click "Save and grade again". Then import `canvas_import.csv` from
+   `exam2/graded`.
 
 See [Local window](#local-window) for details.
 
@@ -193,12 +195,17 @@ See [Local window](#local-window) for details.
 Outputs in `--out` (default: a `graded` folder next to the first scan):
 
 - `key.csv`: the key used for grading, after cancellations.
-- `results.csv`: student ID, version, score, total, percent, the answers read (`-` blank,
-  `*` multiple marks), and flags for unreadable ID digits, marks in unused ID columns,
-  blanks, faint marks and multiple marks.
+- `results.csv`: one row per page: student ID (and, with `--canvas`, name and SIS User
+  ID), version, score, total, percent, the answers read (`-` blank, `*` multiple marks),
+  and flags: blanks, faint and multiple marks, ID problems, gradebook matching and
+  corrections. The guide lists every flag and what to do about it.
 - `item_analysis.csv`: percent correct per question and version.
 - `review.pdf`: each sheet aligned, correct answers circled in green, wrong choices
-  crossed in red, blanks and multiple marks labelled.
+  crossed in red, blanks and multiple marks labelled, canceled questions struck through,
+  and answers set from the corrections file marked `HAND`. The score is at the bottom;
+  a corrected sheet shows two lines, as read and corrected.
+- With `--canvas`: `canvas_import.csv` and `absent.csv` (see
+  [Canvas gradebook](#canvas-gradebook)).
 
 A bubble counts as marked when its inner darkness is at least `MARK_T` (0.35) and at least
 `RELATIVE_T` (0.6) of the darkest bubble in the same row, so light erasures are ignored.
@@ -266,8 +273,9 @@ opens in your browser, in Gradio's dark theme:
 omr-grader-gui
 ```
 
-The "Exam folder" at the top applies to both tabs: Prepare exam writes the key and
-sheets into it, and grading writes to its `graded` folder. It starts as the folder the
+The "Exam folder" at the top applies to every tab: Prepare exam writes the key and
+sheets into it, grading writes to its `graded` folder, and Review reads from there and
+writes `corrections.csv` into the exam folder. It starts as the folder the
 window was started from (in Finder, Option-Command-C copies a folder's path to paste
 in). The header links to [docs/GUIDE.md](docs/GUIDE.md), which shows each step both in
 the window and on the command line.
@@ -275,9 +283,8 @@ the window and on the command line.
 - **Grade** tab: add the scans and the key (the exam `.tex`, with its `.aux` for the
   question-count check, a key CSV or a scanned key sheet), optionally the Canvas
   gradebook (its assignment columns fill the dropdown), a corrections file and
-  cancellations. After grading
-  it shows a summary, the sheets to check and all sheets, with buttons that open
-  `review.pdf` and the `graded` folder.
+  cancellations. After grading it shows a summary, the sheets to check and all sheets,
+  with buttons that open `review.pdf` and the `graded` folder.
 - **Review** tab: after grading, shows the sheets with flags. Click the bubble the student
   meant to set that answer, or the question number to clear a stray mark (click again to
   undo), and type an ID or version for sheets that need one. "Save corrections" writes
@@ -313,7 +320,7 @@ Running the network in NumPy keeps grading free of a deep-learning library:
 - An upgrade of a large library cannot change or break how a digit is read.
 - Importing PyTorch would add a second or two to every run, for four digits per sheet.
 
-Grading needs only the three packages above and the weights file in this repo.
+Grading needs only OpenCV, NumPy and PyMuPDF, and the weights file in this repo.
 
 The network itself is written out in `omrgrader/handwriting.py`; the weights file holds
 only the learned numbers:
@@ -362,7 +369,8 @@ python omr_grader.py example/out/students.pdf --key example/out/key.csv \
 skewed and noisy, and include a blank (sheet 2, Q5), a double mark (sheet 3, Q7), an
 erased-and-changed answer (sheet 4, Q9) and an upside-down page (5). The student IDs
 match the gradebook; one of them is shared by two students, so that sheet is held back.
-`example/out` is not tracked.
+Grading again with `--corrections example/corrections.csv` fixes sheet 2's blank Q5,
+sheet 3's double mark and the shared ID. `example/out` is not tracked.
 
 Without `--key`, `make_test_sheets.py [TEMPLATE.pdf] OUTDIR` makes up two 40-question
 versions and also writes `keys.csv` and a filled key sheet (`--key key_sheet.pdf`):
