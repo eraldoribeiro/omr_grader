@@ -38,7 +38,7 @@ Contents:
 6. [Flags and what to do about them](#6-flags-and-what-to-do-about-them)
 7. [Fix and grade again](#7-fix-and-grade-again)
 8. [Import into Canvas](#8-import-into-canvas)
-9. [Practice on test sheets](#9-practice-on-test-sheets)
+9. [Practice on the example exam](#9-practice-on-the-example-exam)
 
 ## 1. Set up a folder for the exam
 
@@ -50,6 +50,8 @@ exam2/
   exam2.aux        written by LaTeX; used to check the question count
   gradebook.csv    Canvas export (Grades > Export > CSV), for step 4
   scans.pdf        the scanned sheets, after the exam
+  corrections.csv  answers and IDs you set by hand, if any (section 7)
+  graded/          written by the grader (section 5)
 ```
 
 The scans and the gradebook hold student names and IDs, so keep this folder off shared
@@ -149,7 +151,7 @@ grading, each sheet is graded with the key whose ID the student bubbled.
   upside-down and sideways (landscape) pages are turned upright.
 - The six black corner squares must be on the page, so don't crop the edges.
 - Scan the sheets as they are. Students who wrote their ID in the boxes without
-  bubbling it are handled in step 6.
+  bubbling it are handled by the grader (see section 6).
 
 ## 4. Grade
 
@@ -182,7 +184,8 @@ Check the first lines:
 - The gradebook line names the column that will be filled and its points. If the
   column name is wrong, the grader stops and lists the assignments it found.
 - A `share ID digits` warning means two students in the class have the same last four
-  digits. Their sheets are never matched automatically; enter those grades by hand.
+  digits. Their sheets are never matched automatically; set the student's full SIS User
+  ID in the corrections file (section 7).
 - The key lines say how many questions are graded and which are canceled.
 
 In the window: **Grade** tab, with the same exam folder at the top. Add `scans.pdf`,
@@ -231,13 +234,13 @@ One page per sheet, straightened, in the same order as `results.csv`:
   a sheet with corrections there are two lines: "As read" (blue) with the ID, version
   and score the grader read, and "Corrected" (purple) with the result after the
   corrections file and how many items were set by hand.
+- When the ID came from handwriting or the gradebook had to repair it, the enlarged ID
+  boxes are pasted at the bottom so you can read them yourself.
 
 Part of a corrected page: sheet 3 graded with `example/corrections.csv`, which sets its
 double-marked Q7 to C.
 
 ![A corrected page of review.pdf](review_corrected_example.jpg)
-- When the ID came from handwriting or the gradebook had to repair it, the enlarged ID
-  boxes are pasted at the bottom so you can read them yourself.
 
 Look at every page that has a flag. The first time you use a new scanner, scroll
 through the other pages too.
@@ -414,8 +417,9 @@ it, so the corrections file is the better place for anything it can hold.
 2. Canvas shows the changes before saving. Check that the column is the right
    assignment and the number of changed grades matches the `canvas:` line of the
    output.
-3. Save. Then enter by hand the grades for the sheets flagged "Not exported" in
-   section 6.
+3. Save. Sheets flagged "Not exported" in section 6 are not in the file: fix their IDs
+   in the corrections file and grade again before importing, or enter those grades by
+   hand.
 
 Students not in the import file keep their current grade, so the grades you enter by
 hand for sheets that were not exported stay. After grading again (section 7), import the
