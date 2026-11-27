@@ -17,13 +17,9 @@ dependencies = [
     "gradio>=5",
 ]
 
-[project.optional-dependencies]
-mcp = ["mcp>=2"]   # omr-grader-mcp, for local assistants
-
 [project.scripts]
 omr-grader = "omrgrader.grader:main"
 omr-grader-gui = "omrgrader.gui:main"
-omr-grader-mcp = "omrgrader.mcp_server:main"
 
 [tool.setuptools]
 packages = ["omrgrader"]
