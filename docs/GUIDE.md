@@ -142,6 +142,13 @@ grading, each sheet is graded with the key whose ID the student bubbled.
 - **A filled key sheet**: bubble the answers and the Key ID on a blank sheet, scan it,
   and give the scan as the key (`--key key_scan.pdf`). Leave a question blank or fill
   all four bubbles to cancel it.
+- **By clicking, in the window's Key tab**: set the number of questions, click the
+  correct bubble for each question on the blank sheet shown (click again to undo), click
+  a question's number to cancel it, and click the Key field's bubbles (or type) for the
+  key ID. The table on the right lists the key ten questions per line and the status
+  line names any question not set yet. "Save key" writes `key.csv` in the exam folder;
+  then the Prepare exam tab makes the key sheet and student sheet from that `key.csv`.
+  "Load key.csv" reopens a saved key to fix an answer or start another version.
 
 ## 3. Scan the sheets
 

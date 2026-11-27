@@ -273,9 +273,9 @@ opens in your browser, in Gradio's dark theme:
 omr-grader-gui
 ```
 
-The "Exam folder" at the top applies to every tab: Prepare exam writes the key and
-sheets into it, grading writes to its `graded` folder, and Review reads from there and
-writes `corrections.csv` into the exam folder. It starts as the folder the
+The "Exam folder" at the top applies to every tab: Key and Prepare exam write the key
+and sheets into it, grading writes to its `graded` folder, and Review reads from there
+and writes `corrections.csv` into the exam folder. It starts as the folder the
 window was started from (in Finder, Option-Command-C copies a folder's path to paste
 in). The header links to [docs/GUIDE.md](docs/GUIDE.md), which shows each step both in
 the window and on the command line.
@@ -291,8 +291,16 @@ the window and on the command line.
   `corrections.csv` in the exam folder, and the Grade tab applies that file whenever its
   Corrections box is empty; "Save and grade again" does both, and the corrected answers
   show up marked `HAND`.
-- **Prepare exam** tab: the key, key sheet and student sheet from the LaTeX or a CSV,
-  with the key shown ten questions per line for checking.
+- **Key** tab: makes the answer key by clicking, for an exam that is not in LaTeX. Set
+  the number of questions, click the correct bubble for each question (again to undo)
+  or a question's number to cancel it, and click the Key field's bubbles or type the
+  key ID. A table shows the key ten questions per line and which questions are not set
+  yet. "Save key" writes this version to `key.csv` in the exam folder, keeping other
+  versions already there, and refuses while any question is unset. "Load key.csv" brings
+  a saved key back to edit or to start a second version.
+- **Prepare exam** tab: the key, key sheet and student sheet from the LaTeX or a CSV
+  (such as the one the Key tab saves), with the key shown ten questions per line for
+  checking.
 - "More options" holds the mark threshold, number of questions, ID digits and the
   handwritten-ID switch. The grader's output, starting with the equivalent command line,
   is under "Grader output".

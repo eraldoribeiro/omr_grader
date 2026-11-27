@@ -10,6 +10,7 @@ Needs gradio (pip install gradio) in addition to the grader's packages.
 """
 
 import csv
+import functools
 import os
 import platform
 import re
@@ -377,6 +378,156 @@ def review_save(fixes, folder, id_digits, label=None, id_value="", version_value
     return f"Saved {len(corrections_table(fixes))} corrections to `{path}`.", fixes
 
 
+# ---------------------------------------------------------------------------
+# Key tab: click the correct answers on a blank sheet to write key.csv
+# ---------------------------------------------------------------------------
+INK = (25, 25, 25)   # RGB, the fill used on printed key sheets
+
+
+@functools.lru_cache(maxsize=1)
+def blank_sheet():
+    """The blank template at the grader's resolution (template frame, RGB)."""
+    page = g.fitz.open(g.DEFAULT_TEMPLATE)[0]
+    pix = page.get_pixmap(dpi=g.DPI, colorspace=g.fitz.csRGB)
+    img = np.frombuffer(pix.samples, np.uint8).reshape(pix.h, pix.w, pix.n)[:, :, :3]
+    return np.ascontiguousarray(img)
+
+
+def key_draw(n, answers, key_id):
+    """The sheet with the key so far: answers filled in, canceled questions struck
+    through, questions past n faded, and the key ID bubbled."""
+    img = blank_sheet().copy()
+    r = int(g.BUBBLE_R * 0.8)
+    for q in range(1, len(g.ANS_X) * len(g.ANS_Y) + 1):
+        (xa, y), (xd, _) = g.question_center(q, 0), g.question_center(q, 3)
+        if q > n:
+            part = img[int(y) - 21:int(y) + 22, int(xa) - 26:int(xd) + 27]
+            part[:] = (part * 0.3 + 255 * 0.7).astype(np.uint8)
+            continue
+        a = answers.get(q) or ""
+        if a and a in g.CHOICES:
+            x, y = g.question_center(q, g.CHOICES.index(a))
+            cv2.circle(img, (int(x), int(y)), r, INK, -1)
+        elif a == g.CANCELED:
+            cv2.line(img, (int(xa) - 20, int(y)), (int(xd) + 20, int(y)), (120, 120, 120), 3)
+    for col, d in enumerate(key_id):
+        if d.isdigit():
+            cv2.circle(img, (int(g.KEY_X[col]), int(g.DIGIT_Y[int(d)])), r, INK, -1)
+    return img
+
+
+def key_table(n, answers):
+    rows = []
+    for i in range(0, n, 10):
+        qs = range(i + 1, min(i + 10, n) + 1)
+        rows.append([f"{qs[0]}-{qs[-1]}", " ".join(answers.get(q, "·") for q in qs)])
+    return rows
+
+
+def key_status(n, answers, key_id):
+    missing = [q for q in range(1, n + 1) if q not in answers]
+    parts = []
+    if missing:
+        shown = ", ".join(map(str, missing[:15])) + (" ..." if len(missing) > 15 else "")
+        parts.append(f"{len(missing)} of {n} questions not set: {shown}.")
+    else:
+        parts.append(f"All {n} questions set.")
+    if "?" in key_id:
+        parts.append("Key ID not complete.")
+    return " ".join(parts)
+
+
+def key_size(value):
+    try:
+        n = int(value or 0)
+    except (TypeError, ValueError):
+        n = 0
+    return max(1, min(n, len(g.ANS_X) * len(g.ANS_Y)))
+
+
+def key_view(n, answers, key_id, msg=""):
+    """Image, table, ID box and status for the current key."""
+    n = key_size(n)
+    status = key_status(n, answers, key_id)
+    return (key_draw(n, answers, key_id), key_table(n, answers), key_id,
+            (msg + " " if msg else "") + status)
+
+
+def key_click(evt: gr.SelectData, n, answers, key_id):
+    """A click on an answer bubble sets (or undoes) that answer; on a question
+    number, cancels the question; on a Key field bubble, sets that ID digit."""
+    n = key_size(n)
+    x, y = evt.index
+    answers, msg = dict(answers), ""
+    for col, kx in enumerate(g.KEY_X):
+        for d, ky in enumerate(g.DIGIT_Y):
+            if np.hypot(x - kx, y - ky) <= g.BUBBLE_R * 1.7:
+                digits = list(key_id)
+                digits[col] = "?" if digits[col] == str(d) else str(d)
+                key_id = "".join(digits)
+                return (*key_view(n, answers, key_id, f"Key ID {key_id}."), answers)
+    hit = locate(x, y, n)
+    if hit is None:
+        return (*key_view(n, answers, key_id, "Click on a bubble or a question number."),
+                answers)
+    q, a = hit
+    a = g.CANCELED if a == "-" else a
+    if answers.get(q) == a:
+        del answers[q]
+        msg = f"Q{q} cleared."
+    else:
+        answers[q] = a
+        msg = f"Q{q}: {'canceled' if a == g.CANCELED else a}."
+    return (*key_view(n, answers, key_id, msg), answers)
+
+
+def key_typed_id(value, n, answers):
+    digits = re.sub(r"[^0-9?]", "", value or "")[:len(g.KEY_X)]
+    key_id = digits.ljust(len(g.KEY_X), "?")
+    return key_view(n, answers, key_id)
+
+
+def key_load(folder, key_id):
+    """Fill the clicks from the exam folder's key.csv (the version in the Key ID box
+    if it is there, else the first one)."""
+    path = exam_dir(folder) / "key.csv"
+    if not path.exists():
+        raise gr.Error(f"No key.csv in {path.parent} yet.")
+    keys = g.load_keys(str(path))
+    version = key_id if key_id in keys else next(iter(keys))
+    ans = keys[version]
+    answers = {q: a for q, a in enumerate(ans, start=1) if a in g.CHOICES + g.CANCELED}
+    shown_id = version if version.isdigit() and len(version) == len(g.KEY_X) else "???"
+    others = [v for v in keys if v != version]
+    msg = f"Loaded version {version} ({len(ans)} questions) from `{path}`." + (
+        f" The file also has {', '.join(others)}." if others else "")
+    return (len(ans), answers, *key_view(len(ans), answers, shown_id, msg))
+
+
+def key_save(folder, n, answers, key_id):
+    """Write this version's line in the exam folder's key.csv, keeping the others."""
+    n = key_size(n)
+    missing = [q for q in range(1, n + 1) if q not in answers]
+    if missing:
+        raise gr.Error(f"Set or cancel every question first; missing: "
+                       f"{', '.join(map(str, missing[:15]))}"
+                       + (" ..." if len(missing) > 15 else ""))
+    if not (key_id.isdigit() and len(key_id) == len(g.KEY_X)):
+        raise gr.Error(f"Enter the {len(g.KEY_X)}-digit key ID first.")
+    path = exam_dir(folder) / "key.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    keys = g.load_keys(str(path)) if path.exists() else {}
+    keys[key_id] = "".join(answers[q] for q in range(1, n + 1))
+    with open(path, "w", newline="") as f:
+        f.write("version,answers\n")
+        for v, k in keys.items():
+            f.write(f"{v},{k}\n")
+    others = [v for v in keys if v != key_id]
+    return (f"Saved version {key_id} ({n} questions) to `{path}`."
+            + (f" Other versions kept: {', '.join(others)}." if others else "")
+            + " The Prepare exam tab can now make the key sheet and student sheet from it.")
+
+
 def build():
     with gr.Blocks(title="Bubble-sheet grader", delete_cache=(1800, 4 * 3600)) as app:
         gr.Markdown("# Bubble-sheet grader\nRuns on this computer only. "
@@ -522,6 +673,43 @@ def build():
                  book, assignment, corrections, cancel, canceled, nq, thr, digits, hand],
                 [status, table, flagged, log, r_page, r_pages, r_n, r_fixes, r_table,
                  r_img, r_id, r_version, r_info, r_msg])
+
+        with gr.Tab("Key"):
+            gr.Markdown(
+                "Make the answer key by clicking, for an exam that is not in LaTeX. Click "
+                "the correct bubble for each question (click again to undo), or the "
+                "question number to cancel it. Click the Key field's bubbles, or type "
+                "below, to set the key ID. \"Save key\" writes this version to `key.csv` "
+                "in the exam folder; the Prepare exam tab can then print the sheets.")
+            with gr.Row():
+                k_n = gr.Number(label="Number of questions", value=100, precision=0,
+                                minimum=1, maximum=len(g.ANS_X) * len(g.ANS_Y))
+                k_id = gr.Textbox(label="Key ID (3 digits)", value="???")
+                k_load = gr.Button("Load key.csv")
+                k_clear = gr.Button("Clear")
+            with gr.Row():
+                with gr.Column(scale=3):
+                    k_img = gr.Image(value=key_draw(100, {}, "???"), label="Click a bubble",
+                                     interactive=False, type="numpy", height=1000)
+                with gr.Column(scale=1):
+                    k_table = gr.Dataframe(value=key_table(100, {}),
+                                           headers=["questions", "answers"],
+                                           interactive=False, label="Key")
+                    k_save = gr.Button("Save key", variant="primary")
+                    k_msg = gr.Markdown(key_status(100, {}, "???"))
+            k_answers = gr.State({})
+
+            k_img.select(key_click, [k_n, k_answers, k_id],
+                         [k_img, k_table, k_id, k_msg, k_answers])
+            k_n.change(lambda n, a, i: key_view(n, a, i), [k_n, k_answers, k_id],
+                       [k_img, k_table, k_id, k_msg])
+            for event in (k_id.blur, k_id.submit):
+                event(key_typed_id, [k_id, k_n, k_answers], [k_img, k_table, k_id, k_msg])
+            k_load.click(key_load, [exam, k_id],
+                         [k_n, k_answers, k_img, k_table, k_id, k_msg])
+            k_clear.click(lambda n: ({}, *key_view(n, {}, "???", "Cleared.")), k_n,
+                          [k_answers, k_img, k_table, k_id, k_msg])
+            k_save.click(key_save, [exam, k_n, k_answers, k_id], k_msg)
 
         with gr.Tab("Prepare exam"):
             gr.Markdown("Make the key from the exam LaTeX (or a CSV), and the sheets to print.")
